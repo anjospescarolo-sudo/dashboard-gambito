@@ -500,8 +500,8 @@ const OPS = [
 // Aceleradores (+5 se atingir gatilho) e detratores (penalidade se estourar)
 const BONUSROWS = [
   {id:"modelo", nome:"Modelo de Servir", tipo:"bonus", gatilho:70,  op:">=", pts:5, agg:"wk4", triAgg:"avg", fmt:"num"},
-  {id:"fp",     nome:"FP (300k)",        tipo:"bonus", gatilho:5,   op:">=", pts:5, agg:"sum", fmt:"num"},
-  {id:"opin",   nome:"Opin (300k)",      tipo:"bonus", gatilho:5,   op:">=", pts:5, agg:"sum", fmt:"num"},
+  {id:"fp",     nome:"FP (300k)",        tipo:"bonus", gatilho:5,   triGatilho:15, op:">=", pts:5, agg:"sum", fmt:"num"},
+  {id:"opin",   nome:"Opin (300k)",      tipo:"bonus", gatilho:5,   triGatilho:15, op:">=", pts:5, agg:"sum", fmt:"num"},
   {id:"nps",    nome:"NPS",              tipo:"bonus", gatilho:95,  op:">=", pts:5, agg:"wk4", triAgg:"avg", fmt:"num"},
   {id:"npsResp",nome:"Respostas NPS", tipo:"detr", gatilho:5, triGatilho:15, op:"<", pts:-5, agg:"sum", triAgg:"sum", fmt:"num",
     reg:"−5 se < 5 respostas no mês (< 15 no tri)"},
