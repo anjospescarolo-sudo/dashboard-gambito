@@ -1,0 +1,1533 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Bonificação — Assessor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16181D; --ink-soft:#5A5F6B; --ink-faint:#9AA0AB;
+    --paper:#EBEDF0; --card:#FFFFFF; --line:#E2E5E9; --line-soft:#EEF0F3;
+    --green:#0E6E4E; --green-d:#0A5A40; --green-soft:#E7F2ED;
+    --gold:#94712F; --gold-soft:#F3ECDD;
+    --red:#B4232A; --red-soft:#F8E9E9;
+    --pj:#3E6FA8; --pj-soft:#E9F0F7;
+    --amber:#B27016; --amber-soft:#FBF0DF;
+    --shadow:0 1px 2px rgba(20,24,34,.04),0 8px 24px rgba(20,24,34,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:'Inter',system-ui,sans-serif; color:var(--ink);
+    background:var(--paper); line-height:1.5; font-size:14px;
+    padding:22px 20px 80px; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1200px;margin:0 auto}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+  h1,h2,h3{font-family:'Space Grotesk',sans-serif;font-weight:600;letter-spacing:-.01em}
+
+  /* ---- Masthead ---- */
+  .masthead{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:18px}
+  .masthead .eyebrow{font-family:'Space Grotesk';font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+  .masthead h1{font-size:26px;line-height:1.05;margin-top:2px}
+  .masthead .sub{color:var(--ink-soft);font-size:13px;margin-top:4px}
+  .badge{font-family:'Space Grotesk';font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+    background:var(--ink);color:#fff;padding:5px 11px;border-radius:100px}
+
+  /* ---- Config bar ---- */
+  .config{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px 18px;margin-bottom:16px}
+  .fld{display:flex;flex-direction:column;gap:4px}
+  .fld label{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-faint)}
+  .fld input,.fld select{font-family:'Inter';font-size:14px;color:var(--ink);border:1px solid var(--line);
+    border-radius:8px;padding:8px 10px;background:#fff;width:100%}
+  .fld input:focus,.fld select:focus{outline:2px solid var(--green);outline-offset:-1px;border-color:var(--green)}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
+  .seg button{font-family:'Space Grotesk';font-size:12.5px;font-weight:600;border:0;background:transparent;color:var(--ink-soft);
+    padding:8px 12px;cursor:pointer}
+  .seg button.on{background:var(--ink);color:#fff}
+
+  /* ---- Hero ---- */
+  .hero{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:0;box-shadow:var(--shadow);
+    margin-bottom:16px;overflow:hidden}
+  .hero-grid{display:grid;grid-template-columns:1.35fr 1fr}
+  @media(max-width:760px){.hero-grid{grid-template-columns:1fr}}
+  .hero-left{padding:22px 24px}
+  .hero-right{padding:22px 24px;background:linear-gradient(160deg,#12352A 0%,#0B231C 100%);color:#fff;display:flex;flex-direction:column;justify-content:center}
+  .hero-cap{font-family:'Space Grotesk';font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint)}
+  .score-row{display:flex;align-items:baseline;gap:14px;margin:6px 0 4px}
+  .score-big{font-family:'Space Grotesk';font-weight:700;font-size:58px;line-height:.9;letter-spacing:-.03em}
+  .score-unit{font-family:'Space Grotesk';font-size:15px;font-weight:500;color:var(--ink-soft)}
+  .verdict{font-family:'Space Grotesk';font-size:13px;font-weight:600;padding:4px 10px;border-radius:100px;display:inline-block}
+  .verdict.hit{background:var(--green-soft);color:var(--green-d)}
+  .verdict.miss{background:var(--red-soft);color:var(--red)}
+
+  /* meter */
+  .meter{margin-top:18px}
+  .meter-track{position:relative;height:22px;background:var(--line-soft);border-radius:100px;overflow:visible}
+  .meter-fill{position:absolute;left:0;top:0;bottom:0;border-radius:100px;transition:width .5s cubic-bezier(.22,.61,.36,1)}
+  .meter-fill.hit{background:linear-gradient(90deg,var(--green),var(--green-d))}
+  .meter-fill.miss{background:linear-gradient(90deg,#D89A3E,var(--amber))}
+  .meter-floor{position:absolute;top:-5px;bottom:-5px;width:2px;background:var(--ink);left:66.666%}
+  .meter-floor::after{content:'80 — mínimo p/ bônus';position:absolute;top:-19px;left:50%;transform:translateX(-50%);
+    white-space:nowrap;font-family:'Space Grotesk';font-size:10px;font-weight:600;color:var(--ink)}
+  .meter-scale{display:flex;justify-content:space-between;margin-top:7px;font-family:'Space Grotesk';font-size:10.5px;color:var(--ink-faint);font-weight:500}
+  .meter-marker{position:absolute;top:-3px;width:28px;height:28px;transform:translateX(-50%);transition:left .5s cubic-bezier(.22,.61,.36,1)}
+
+  .hero-money-cap{font-family:'Space Grotesk';font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+  .hero-money{font-family:'Space Grotesk';font-weight:700;font-size:42px;line-height:1;letter-spacing:-.02em;margin:8px 0 2px}
+  .hero-money-sub{font-size:12.5px;color:rgba(255,255,255,.72)}
+  .hero-money-row{display:flex;justify-content:space-between;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.14)}
+  .hero-money-row .k{font-size:11px;color:rgba(255,255,255,.6);letter-spacing:.04em;text-transform:uppercase}
+  .hero-money-row .v{font-family:'Space Grotesk';font-weight:600;font-size:15px}
+
+  /* period tabs */
+  .ptabs{display:flex;gap:6px;margin-bottom:14px}
+  .ptabs button{font-family:'Space Grotesk';font-weight:600;font-size:13px;border:1px solid var(--line);background:#fff;color:var(--ink-soft);
+    padding:8px 16px;border-radius:100px;cursor:pointer}
+  .ptabs button.on{background:var(--gold);border-color:var(--gold);color:#fff}
+
+  /* nudges */
+  .nudges{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:16px}
+  .nudge{border:1px solid var(--line);border-radius:11px;padding:11px 13px;background:#fff;font-size:12.5px;color:var(--ink-soft)}
+  .nudge b{color:var(--ink);font-weight:600}
+  .nudge .n-t{font-family:'Space Grotesk';font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--gold);margin-bottom:3px}
+
+  /* ---- Section / tables ---- */
+  .section{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
+  .sec-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+  #gate{position:fixed;inset:0;background:var(--ink);display:flex;align-items:center;justify-content:center;z-index:9999}
+  #gate .gate-box{background:#fff;padding:34px 30px;border-radius:18px;width:340px;max-width:90vw;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.35)}
+  #gate .gate-brand{font-family:'Space Grotesk';font-weight:700;font-size:22px;letter-spacing:-.01em}
+  #gate p{font-size:12.5px;color:var(--ink-soft);margin:6px 0 18px}
+  #gate input{width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:10px;font-size:14px;margin-bottom:10px;box-sizing:border-box}
+  #gate button{width:100%;padding:12px;border:0;border-radius:10px;background:var(--green);color:#fff;font-weight:600;font-size:14px;cursor:pointer}
+  #gateErr{color:var(--red);font-size:12.5px;margin-top:10px;display:none}
+  .sec-tag{width:10px;height:22px;border-radius:3px}
+  .sec-tag.metas{background:var(--ink)}
+  .sec-tag.ops{background:var(--ink-faint)}
+  .sec-tag.bonus{background:var(--green)}
+  .sec-tag.detr{background:var(--red)}
+  .sec-head h2{font-size:15px}
+  .sec-head .hint{margin-left:auto;font-size:11.5px;color:var(--ink-faint)}
+  .tscroll{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;min-width:820px}
+  thead th{font-family:'Space Grotesk';font-size:10.5px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--ink-faint);
+    text-align:center;padding:9px 6px;border-bottom:1px solid var(--line);white-space:nowrap;background:#FAFBFC}
+  thead th.grp{border-left:1px solid var(--line-soft)}
+  thead .wk{color:var(--ink-soft)}
+  tbody td{padding:6px;border-bottom:1px solid var(--line-soft);text-align:center;vertical-align:middle}
+  tbody tr:last-child td{border-bottom:0}
+  .rowname{text-align:left!important;font-weight:600;font-size:13px;white-space:nowrap;padding-left:16px!important}
+  .rowmeta{font-size:11px;color:var(--ink-faint);font-weight:500}
+  td.metacell{font-family:'Space Grotesk';font-weight:600;font-size:12.5px;color:var(--ink);background:#FAFBFC;white-space:nowrap}
+  .cell-in{width:74px;font-family:'Inter';font-size:12.5px;text-align:right;border:1px solid var(--line);border-radius:6px;padding:5px 7px;color:var(--ink);background:#fff}
+  .cell-in.p{background:#FCFCFD;color:var(--ink-soft)}
+  .cell-in.brl{width:108px}
+  .cell-in:focus{outline:1.5px solid var(--green);outline-offset:-1px;border-color:var(--green)}
+  td.grp{border-left:1px solid var(--line-soft)}
+  td.real{font-family:'Space Grotesk';font-weight:600;font-size:12.5px;white-space:nowrap}
+  td.pts{font-family:'Space Grotesk';font-weight:700;font-size:13.5px;white-space:nowrap}
+  .pts.full{color:var(--green)}
+  .pts.part{color:var(--ink)}
+  .pts.zero{color:var(--ink-faint)}
+  .pts.pen{color:var(--red)}
+  .pts.ok{color:var(--green)}
+  .flag{font-family:'Space Grotesk';font-size:11px;font-weight:600;padding:3px 8px;border-radius:100px;white-space:nowrap}
+  .flag.on{background:var(--green-soft);color:var(--green-d)}
+  .flag.off{background:var(--red-soft);color:var(--red)}
+  .flag.neutral{background:var(--line-soft);color:var(--ink-soft)}
+  .farol{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;vertical-align:middle;flex:none}
+  .farol.g{background:var(--green)} .farol.r{background:var(--red)} .farol.n{background:var(--line)}
+  .pr-pct{font-family:'Space Grotesk';font-size:9.5px;font-weight:600;text-align:right;margin-top:2px;line-height:1}
+  .pr-pct.g{color:var(--green)} .pr-pct.a{color:var(--amber)} .pr-pct.r{color:var(--red)}
+  .barmini{height:5px;background:var(--line-soft);border-radius:100px;margin-top:5px;overflow:hidden}
+  .barmini>i{display:block;height:100%;border-radius:100px;background:var(--green)}
+  tfoot td{padding:11px 16px;font-family:'Space Grotesk';font-weight:700;font-size:14px;background:#FAFBFC;border-top:2px solid var(--line)}
+
+  /* ---- Plan ---- */
+  .plan-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .plan-col-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  #copyPrevPlan{font-size:11.5px;padding:5px 10px;white-space:nowrap}
+  @media(max-width:760px){.plan-grid{grid-template-columns:1fr}}
+  .plan-col h3{font-size:14px;margin-bottom:4px}
+  .plan-col .desc{font-size:12px;color:var(--ink-faint);margin-bottom:12px}
+  .plan-item{display:flex;gap:10px;align-items:flex-start;margin-bottom:9px}
+  .plan-item .n{font-family:'Space Grotesk';font-weight:700;color:var(--gold);font-size:13px;padding-top:8px}
+  .plan-item textarea{flex:1;font-family:'Inter';font-size:13px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;
+    resize:vertical;min-height:38px;color:var(--ink)}
+  .plan-item textarea:focus{outline:1.5px solid var(--green);outline-offset:-1px;border-color:var(--green)}
+  .chk{display:flex;align-items:center;gap:6px}
+  .chk input{width:16px;height:16px;accent-color:var(--green)}
+  .mini-x{border:0;background:transparent;color:var(--ink-faint);font-size:19px;line-height:1;cursor:pointer;padding:0 4px}
+  .mini-x:hover{color:var(--red)}
+  .addbtn{margin-top:6px;font-size:12px;padding:6px 12px;color:var(--green);border:1px dashed var(--line)}
+  .plan-item.act{align-items:flex-start}
+  .act-body{flex:1;display:flex;flex-direction:column;gap:8px}
+  .act-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .mini-lbl{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-faint)}
+  .mini-lbl input[type=date]{font-family:'Inter';font-size:12.5px;border:1px solid var(--line);border-radius:7px;padding:5px 8px;color:var(--ink)}
+  .mini-lbl input[type=date]:focus{outline:1.5px solid var(--green);outline-offset:-1px;border-color:var(--green)}
+  .hist{font-size:11.5px;color:var(--ink-soft);display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+  .hist b{color:var(--ink)}
+  .chain{font-family:'Space Grotesk';font-size:11px;color:var(--ink-soft);background:var(--line-soft);padding:2px 9px;border-radius:100px}
+  .tag{font-family:'Space Grotesk';font-size:11px;font-weight:600;padding:3px 9px;border-radius:100px;white-space:nowrap}
+  .tag.ok{background:var(--green-soft);color:var(--green-d)}
+  .tag.late{background:var(--red-soft);color:var(--red)}
+  .plan-summary{font-size:12px;color:var(--ink-soft);background:var(--gold-soft);border-radius:9px;padding:9px 13px;margin-bottom:14px}
+  .plan-summary b{color:var(--ink);font-family:'Space Grotesk';font-weight:600}
+
+  /* ativação ponderada — botão + calculadora */
+  .calc-btn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:22px;border:1px solid var(--gold);border-radius:7px;background:var(--gold-soft);color:var(--gold);cursor:pointer;vertical-align:middle;margin-left:6px;padding:0}
+  .calc-btn:hover{background:var(--gold);color:#fff}
+  .calc-cell{color:var(--ink-soft);font-size:12.5px}
+  .calc-cell b{color:var(--ink);font-family:'Space Grotesk'}
+  .calc-link{border:0;background:transparent;color:var(--gold);font-family:'Space Grotesk';font-weight:600;font-size:12.5px;cursor:pointer;text-decoration:underline;padding:0}
+  .modal-bg{position:fixed;inset:0;background:rgba(20,24,34,.5);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+  .modal{background:var(--card);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.32);max-width:560px;width:100%;padding:26px 28px;max-height:90vh;overflow:auto}
+  .modal h2{font-size:20px;margin-bottom:4px}
+  .modal-sub{font-size:13px;color:var(--ink-soft);margin-bottom:18px}
+  .ativ-tbl{width:100%;border-collapse:collapse;margin-bottom:14px;min-width:0}
+  .ativ-tbl th{font-family:'Space Grotesk';font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-faint);text-align:left;padding:8px 4px;border-bottom:1px solid var(--line)}
+  .ativ-tbl th:last-child{text-align:center}
+  .ativ-tbl td{padding:10px 4px;border-bottom:1px solid var(--line-soft);text-align:left}
+  .ativ-faixa{font-weight:600;font-size:14px}
+  .ativ-faixa small{display:block;font-weight:500;font-size:11.5px;color:var(--ink-faint)}
+  .ativ-qty{width:90px;font-family:'Inter';font-size:15px;text-align:center;border:1px solid var(--line);border-radius:9px;padding:9px;color:var(--ink);display:block;margin:0 auto}
+  .ativ-qty:focus{outline:1.5px solid var(--gold);outline-offset:-1px;border-color:var(--gold)}
+  .ativ-tbl tfoot td{font-family:'Space Grotesk';font-weight:700;font-size:15px;border-top:1.5px solid var(--line);border-bottom:0;padding-top:12px}
+  .ativ-total{color:var(--gold);text-align:center;font-size:20px}
+  .modal-note{font-size:12px;color:var(--ink-soft);background:var(--gold-soft);border-radius:10px;padding:11px 14px;margin-bottom:18px;line-height:1.5}
+  .modal-note b{color:var(--ink)}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px}
+  .btn.gold{background:var(--gold);border-color:var(--gold);color:#fff}
+
+  /* ---- Footer actions ---- */
+  .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:4px}
+  .btn{font-family:'Space Grotesk';font-weight:600;font-size:13px;border-radius:9px;padding:9px 16px;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink)}
+  .btn.primary{background:var(--green);border-color:var(--green);color:#fff}
+  .btn.ghost{background:transparent}
+  .saved-note{font-size:12px;color:var(--ink-faint)}
+  .disclaimer{font-size:11.5px;color:var(--ink-faint);margin-top:26px;line-height:1.6;border-top:1px solid var(--line);padding-top:16px}
+
+  /* view switch */
+  .topswitch{display:inline-flex;border:1px solid var(--line);border-radius:100px;overflow:hidden;background:#fff;box-shadow:var(--shadow)}
+  .topswitch button{font-family:'Space Grotesk';font-size:13px;font-weight:600;border:0;background:transparent;color:var(--ink-soft);padding:9px 18px;cursor:pointer}
+  .topswitch button.on{background:var(--ink);color:#fff}
+
+  /* captação chart */
+  .chart-legend{display:flex;gap:20px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--ink-soft)}
+  .chart-legend span{display:inline-flex;align-items:center;gap:7px}
+  .chart-legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+  .chart-legend em{color:var(--ink-faint);font-style:normal}
+  .chart-empty{text-align:center;color:var(--ink-faint);font-size:13px;padding:48px 0}
+  #captChart svg{width:100%;height:auto;display:block}
+  .bar-total{font-family:'Space Grotesk';font-size:10.5px;font-weight:700;fill:var(--ink)}
+  .bar-month{font-family:'Space Grotesk';font-size:11px;font-weight:500;fill:var(--ink-soft)}
+  .bar-seg{transition:opacity .15s}
+  .bar-seg:hover{opacity:.82}
+  .axis-line{stroke:var(--line);stroke-width:1}
+  .zero-line{stroke:var(--ink-faint);stroke-width:1.2}
+  .grid-lbl{font-family:'Space Grotesk';font-size:9.5px;fill:var(--ink-faint)}
+
+  /* team view */
+  .team-top{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-bottom:16px}
+  @media(max-width:760px){.team-top{grid-template-columns:1fr}}
+  .team-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 24px;box-shadow:var(--shadow)}
+  .team-card.dark{background:linear-gradient(160deg,#12352A 0%,#0B231C 100%);color:#fff}
+  .team-cap{font-family:'Space Grotesk';font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint)}
+  .team-card.dark .team-cap{color:rgba(255,255,255,.6)}
+  .team-big{font-family:'Space Grotesk';font-weight:700;font-size:52px;line-height:.95;letter-spacing:-.02em;margin:6px 0 2px}
+  .team-money{font-family:'Space Grotesk';font-weight:700;font-size:40px;line-height:1;margin:8px 0 2px}
+  .team-sub{font-size:12.5px;color:var(--ink-soft)}
+  .team-card.dark .team-sub{color:rgba(255,255,255,.72)}
+  .rank td.rname{text-align:left!important;font-weight:600;font-size:13.5px;padding-left:16px!important}
+  .rank td{padding:11px 8px}
+  .rank .cl{font-family:'Space Grotesk';font-size:11px;font-weight:600;color:var(--ink-soft);background:var(--line-soft);padding:2px 9px;border-radius:100px}
+  .rank .sc{font-family:'Space Grotesk';font-weight:700;font-size:14px}
+  .rank .sc.hit{color:var(--green)} .rank .sc.miss{color:var(--red)} .rank .sc.none{color:var(--ink-faint)}
+  .rank .money{font-family:'Space Grotesk';font-weight:600;font-size:13.5px}
+  .rank tbody tr:hover{background:#FAFBFC}
+  .rank.matrix{font-size:12px;white-space:nowrap}
+  .rank.matrix th{font-size:11px;font-weight:600;color:var(--ink-soft);padding:8px 7px;position:sticky;top:0}
+  .rank.matrix td{padding:8px 7px}
+  .rank.matrix .sc{font-size:12px;font-weight:600}
+  .rank.matrix td.rname{position:sticky;left:0;background:#fff;z-index:1}
+  .rank.matrix td.cell-hit{background:rgba(22,163,74,.12);color:var(--green)}
+  .rank.matrix td.cell-miss{background:rgba(220,38,38,.10);color:var(--red)}
+  .disclaimer{font-size:11.5px;color:var(--ink-faint);margin-top:26px;line-height:1.6;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <div>
+      <div class="eyebrow">Equipe Gambito · Programa de Bonificação</div>
+      <h1>Painel de Desempenho</h1>
+      <div class="sub">Preencha o realizado de cada semana e acompanhe, em tempo real, a trajetória até o bônus trimestral.</div>
+    </div>
+    <div class="topswitch" id="viewSwitch">
+      <button data-view="assessor" class="on">Assessor</button>
+      <button data-view="equipe">Equipe Gambito</button>
+    </div>
+  </div>
+
+  <!-- CONFIG -->
+  <div class="config">
+    <div class="fld">
+      <label>Equipe</label>
+      <input id="cfgTeam" type="text" value="Gambito">
+    </div>
+    <div class="fld" data-only="assessor">
+      <label>Assessor</label>
+      <select id="cfgName"></select>
+    </div>
+    <div class="fld" data-only="assessor">
+      <label>Cluster (custódia)</label>
+      <select id="cfgCluster">
+        <option>Select</option><option>Exclusive</option><option>Premium</option><option>Unique</option><option>Private</option>
+      </select>
+    </div>
+    <div class="fld" data-only="assessor">
+      <label>Mês</label>
+      <select id="cfgMonth"></select>
+    </div>
+    <div class="fld" data-only="equipe">
+      <label>Trimestre</label>
+      <select id="cfgQuarter">
+        <option value="0">1º Trimestre</option>
+        <option value="1">2º Trimestre</option>
+        <option value="2">3º Trimestre</option>
+        <option value="3">4º Trimestre</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="viewAssessorSections">
+    <span class="badge" id="clusterBadge" style="display:inline-block;margin-bottom:14px">Cluster —</span>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-grid">
+      <div class="hero-left">
+        <div class="hero-cap">Score do mês <span id="heroMonthLbl"></span></div>
+        <div class="score-row">
+          <span class="score-big num" id="heroScore">0,0</span>
+          <span class="score-unit">/ 120 pts</span>
+          <span class="verdict miss" id="heroVerdict">abaixo do mínimo</span>
+        </div>
+        <div class="meter">
+          <div class="meter-track">
+            <div class="meter-fill miss" id="meterFill" style="width:0%"></div>
+            <div class="meter-floor"></div>
+          </div>
+          <div class="meter-scale"><span>0</span><span>40</span><span>80</span><span>120</span></div>
+        </div>
+        <div class="nudges" id="nudges"></div>
+      </div>
+      <div class="hero-right">
+        <div class="hero-money-cap">Bônus trimestral projetado</div>
+        <div class="hero-money num" id="heroMoney">R$ 0</div>
+        <div class="hero-money-sub" id="heroMoneySub">com base no score acumulado do trimestre</div>
+        <div class="hero-money-row">
+          <div><div class="k">Score trimestre</div><div class="v num" id="heroTriScore">0,0</div></div>
+          <div><div class="k">Bônus cheio (100%)</div><div class="v num" id="heroFullBonus">R$ 0</div></div>
+          <div><div class="k">Teto (120%)</div><div class="v num" id="heroCapBonus">R$ 0</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PERIOD TABS -->
+  <div class="ptabs">
+    <button data-period="mes" class="on">Visão do mês</button>
+    <button data-period="tri">Visão do trimestre</button>
+  </div>
+
+  <!-- METAS -->
+  <div class="section">
+    <div class="sec-head"><span class="sec-tag metas"></span><h2>Indicadores finalísticos</h2>
+      </div>
+    <div class="tscroll"><table id="tblMetas"></table></div>
+  </div>
+
+  <!-- OPERACIONAL -->
+  <div class="section">
+    <div class="sec-head"><span class="sec-tag ops"></span><h2>Indicadores operacionais</h2>
+      <span class="hint">acompanhamento de rotina · não pontua</span></div>
+    <div class="tscroll"><table id="tblOps"></table></div>
+  </div>
+
+  <!-- BONUS + DETRATOR -->
+  <div class="section">
+    <div class="sec-head"><span class="sec-tag bonus"></span><h2>Aceleradores &amp; detratores</h2>
+      <span class="hint">bônus até +20 · detratores até −20</span></div>
+    <div class="tscroll"><table id="tblBonus"></table></div>
+  </div>
+
+  <!-- CAPTAÇÃO CHART -->
+  <div class="section" style="padding:18px 18px 22px">
+    <div class="sec-head" style="padding:0 0 14px;border:0">
+      <span class="sec-tag metas"></span>
+      <h2><span id="chartTitle">Captação mensal</span> — <span id="chartWho">assessor</span></h2>
+      <select id="chartSel" style="margin-left:auto">
+        <option value="captacao">Captação (PF + PJ)</option>
+        <option value="roa">ROA XP</option>
+        <option value="ativ">Ativação Ponderada</option>
+        <option value="divers">%Diversificação PJ2</option>
+      </select>
+    </div>
+    <div id="captChart"></div>
+    <div class="chart-legend" id="chartLegend"></div>
+  </div>
+
+  <!-- PLANO -->
+  <div class="section" style="padding:18px">
+    <div class="plan-grid">
+      <div class="plan-col">
+        <h3>Principais desafios</h3>
+        <div class="desc">Os principais gargalos que mais pesam no score agora.</div>
+        <div id="challenges"></div>
+      </div>
+      <div class="plan-col">
+        <div class="plan-col-head">
+          <h3>Plano de ação semanal</h3>
+          <button class="btn ghost" id="copyPrevPlan" title="Copiar as ações que ficaram em aberto no mês anterior">↧ Copiar ações em aberto do mês anterior</button>
+        </div>
+        <div class="desc">O que será feito, até quando, e se foi concluído.</div>
+        <div id="plans"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn primary" id="btnSave">Salvar preenchimento</button>
+    <button class="btn ghost" id="btnReset">Limpar mês</button>
+    <span class="saved-note" id="savedNote"></span>
+  </div>
+  </div><!-- /viewAssessorSections -->
+
+  <!-- VIEW: EQUIPE -->
+  <div id="viewEquipe" style="display:none"></div>
+
+  <div class="disclaimer" id="disclaimer"></div>
+</div>
+
+<!-- CALCULADORA ATIVAÇÃO PONDERADA -->
+<div id="ativModal" class="modal-bg" style="display:none">
+  <div class="modal">
+    <h2>Calculadora — Ativação Ponderada</h2>
+    <div class="modal-sub">Informe a quantidade de ativações por faixa no mês <b id="ativModalMonth"></b>. O total ponderado vira a pontuação de ativação do mês na tabela.</div>
+    <table class="ativ-tbl">
+      <thead><tr><th>Faixa de ativação</th><th>Quantidade</th></tr></thead>
+      <tbody id="ativRows"></tbody>
+      <tfoot><tr><td>Total ponderado</td><td class="ativ-total" id="ativTotal">0</td></tr></tfoot>
+    </table>
+    <div class="modal-note">Pesos por ativação: 50k–300k = <b>0,5</b> · 300k–1M = <b>1,5</b> · 1M–5M = <b>3</b> · acima de 5M = <b>6</b> pts. Meta: <b>3 pts/mês</b> · <b>9 pts/trimestre</b>.</div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="ativCancel">Cancelar</button>
+      <button class="btn gold" id="ativApply">Lançar na tabela</button>
+    </div>
+  </div>
+</div>
+
+<div id="gate">
+  <div class="gate-box">
+    <div class="gate-brand">Equipe Gambito</div>
+    <p>Área restrita · informe a senha de acesso.</p>
+    <input id="gatePass" type="password" placeholder="Senha" autocomplete="current-password">
+    <button id="gateBtn">Entrar</button>
+    <div id="gateErr">Senha incorreta.</div>
+  </div>
+</div>
+
+<script>
+/* Configuração embutida — site público, dados apenas indicadores, senha em hash SHA-256.
+   Para trocar a senha: gere o SHA-256 da nova senha e substitua ACCESS_PASSWORD_HASH. */
+window.GAMBITO_CONFIG = {
+  API_URL: 'https://script.google.com/macros/s/AKfycbygHVzNxZyiwPf7KylsjEQb_LxFxbV8hoDKyuLeagNMo4ru_RXGhUAtJLoVS0rXACOmug/exec',
+  USE_BACKEND: true,
+  ACCESS_PASSWORD_HASH: '738cbfe77ce5f6d6ae87c4fa7be6f0738c0e9379d504d41ab09e1d9e08da0053'
+};
+</script>
+<script>
+"use strict";
+/* ============ CONFIG ============ */
+const CLUSTERS = ["Select","Exclusive","Premium","Unique","Private"];
+const CLUSTER_IDX = c => CLUSTERS.indexOf(c);
+
+const BONUS = {           // bônus trimestral por cluster
+  assessor: [3000,5000,8000,12000,15000],
+  lider:    [2000,2000,3000, 5000, 7000]
+};
+const BASE_LIMIT = [300,120,120,120,120];   // teto de base de clientes ativos
+
+// Metas mensais por cluster. agg: como consolidar semanas -> mês
+const METAS = [
+  {id:"capTot", nome:"Captação Bruta Total", sub:"ex-corporate", peso:20, fmt:"brl", agg:"sum", cap:true,
+    meta:[400000,600000,1200000,2000000,10000000]},
+  {id:"capPF",  nome:"Captação Líquida PF",    sub:"pessoa física · sem teto", peso:30, fmt:"brl", agg:"sum", cap:false,
+    meta:[400000,600000,800000,1000000,1500000]},
+  {id:"roa",    nome:"ROA XP",                 sub:"fechamento (semana 4)", peso:20, fmt:"pct", agg:"wk4", triAgg:"avg", cap:true,
+    meta:[0.65,0.65,0.65,0.65,0.65]},
+  {id:"ativ",   nome:"Ativação Ponderada",     sub:"por faixa · via calculadora", peso:15, fmt:"num", agg:"sum", cap:false, calc:true,
+    meta:[3,3,3,3,3]},
+  {id:"divers", nome:"%Diversificação PJ2",    sub:"fechamento (semana 4)", peso:15, fmt:"pct", agg:"wk4", triAgg:"avg", cap:true,
+    meta:[35,35,35,35,35]}
+];
+// Faixas de ativação ponderada (pontos por ativação)
+const ATIV_FAIXAS = [
+  {lbl:"50k – 300k", w:0.5},
+  {lbl:"300k – 1M",  w:1.5},
+  {lbl:"1M – 5M",    w:3},
+  {lbl:"acima de 5M",w:6}
+];
+function ativPointsOf(sd){
+  const c = (sd && sd.ativCalc) || [];
+  return ATIV_FAIXAS.reduce((s,f,i)=> s + ((+c[i])||0)*f.w, 0);
+}
+const OPS = [
+  {id:"reuBase", nome:"Reuniões com clientes da base", agg:"sum"},
+  {id:"indic",   nome:"Indicações obtidas", agg:"sum"},
+  {id:"leads",   nome:"Novos leads gerados", agg:"sum"},
+  {id:"reuLead", nome:"Reuniões com leads", agg:"sum"},
+  {id:"cross",   nome:"Reuniões de cross sell", agg:"sum"}
+];
+// Aceleradores (+5 se atingir gatilho) e detratores (penalidade se estourar)
+const BONUSROWS = [
+  {id:"modelo", nome:"Modelo de Servir", tipo:"bonus", gatilho:70,  op:">=", pts:5, agg:"wk4", triAgg:"avg", fmt:"num"},
+  {id:"fp",     nome:"FP (300k)",        tipo:"bonus", gatilho:5,   op:">=", pts:5, agg:"sum", fmt:"num"},
+  {id:"opin",   nome:"Opin (300k)",      tipo:"bonus", gatilho:5,   op:">=", pts:5, agg:"sum", fmt:"num"},
+  {id:"nps",    nome:"NPS",              tipo:"bonus", gatilho:95,  op:">=", pts:5, agg:"wk4", triAgg:"avg", fmt:"num"},
+  {id:"npsResp",nome:"Respostas NPS", tipo:"detr", gatilho:5, triGatilho:15, op:"<", pts:-5, agg:"sum", triAgg:"sum", fmt:"num",
+    reg:"−5 se < 5 respostas no mês (< 15 no tri)"},
+  {id:"baseCli",nome:"Base de clientes ativos", tipo:"detr", gatilho:"BASE", op:">", pts:-5, agg:"last", fmt:"num",
+    reg:"−5 se acima do teto do cluster"},
+  {id:"semAp",  nome:"% Clientes s/ aporte >6m", tipo:"detr", gatilho:30, op:">", pts:-10, agg:"last", fmt:"pct",
+    reg:"−10 se acima de 30%"}
+];
+const ROSTER = [
+  {n:"—",              c:null},
+  {n:"Arlene Cubas",   c:"Premium"},
+  {n:"Arnaldo Junior", c:"Exclusive"},
+  {n:"Caio Andrade",   c:"Premium"},
+  {n:"Jones Ribeiro",  c:"Exclusive"},
+  {n:"Pedro Silva",    c:"Unique"},
+  {n:"Caio Polo",      c:"Exclusive"},
+  {n:"Sell Chaves",    c:"Exclusive"}
+];
+const MONTHS = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+// trimestre a que cada mês pertence (para acumular)
+const TRIM = m => Math.floor(m/3);
+
+/* ============ STATE + STORAGE ============ */
+const KEY = "jfk_bonus_v1";
+let store = {};              // { "Assessor|Mês": {weeks..., plan...}, meta:{...} }
+try{ const raw = localStorage.getItem(KEY); if(raw) store = JSON.parse(raw); }catch(e){ store = {}; }
+
+/* ---- Backend (Google Apps Script) — opcional, via config.js ---- */
+const BE = (window.GAMBITO_CONFIG && window.GAMBITO_CONFIG.USE_BACKEND && window.GAMBITO_CONFIG.API_URL)
+  ? window.GAMBITO_CONFIG : null;
+function setSync(msg, err){ const n=document.getElementById("savedNote"); if(n){ n.textContent=msg; n.style.color = err ? "var(--red)" : ""; } }
+// Lê a aba Fonte (via backend) e mescla no store. Mantém plano/desafios locais;
+// substitui só os dados realizados (w) e a ativação (ativCalc) pelos da planilha.
+async function beLoadAll(){
+  const r = await fetch(BE.API_URL, { method:"GET" });
+  const j = await r.json();
+  if(!j.ok) throw new Error(j.error || "resposta inválida");
+  const d = j.data || {};
+  Object.keys(d).forEach(k=>{
+    if(k==="meta" || !d[k]) return;
+    const cur = store[k] || {};
+    store[k] = Object.assign({}, cur, { w: d[k].w || {}, ativCalc: d[k].ativCalc || cur.ativCalc || [] });
+  });
+  return true;
+}
+// Grava o mês inteiro (backend distribui nas 4 linhas de semana da Fonte).
+async function bePush(key){
+  const parts = key.split("|");
+  const mes = +parts.pop();
+  const assessor = parts.join("|");
+  const rec = store[key] || {};
+  const body = { assessor, mes, w: rec.w || {}, ativCalc: rec.ativCalc || [] };
+  const r = await fetch(BE.API_URL, { method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" }, body: JSON.stringify(body) });
+  const j = await r.json();
+  if(!j.ok) throw new Error(j.error || "resposta inválida");
+}
+const _pushTimers = {};
+function queuePush(key){
+  if(!BE) return;
+  clearTimeout(_pushTimers[key]);
+  setSync("Salvando na planilha…");
+  _pushTimers[key] = setTimeout(()=>{
+    bePush(key)
+      .then(()=> setSync("Salvo na planilha · "+new Date().toLocaleTimeString("pt-BR")))
+      .catch(e=> setSync("Falha ao salvar online ("+e.message+") — salvo neste navegador", true));
+  }, 500);
+}
+
+function persistLocal(){ try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){} }
+function persist(){ persistLocal(); queuePush(slot()); }
+
+const cfg = { name:"—", cluster:"Exclusive", month:5, team:"Gambito", quarter:1 };
+Object.assign(cfg, store.meta || {});
+if(cfg.quarter==null) cfg.quarter = Math.floor(cfg.month/3);
+let period = "mes";
+let view = "assessor";
+let chartMetric = "captacao";
+
+function slot(){ return cfg.name + "|" + cfg.month; }
+function slotDataOf(name, month){ return store[name+"|"+month] || {w:{}, prior:{}}; }
+function data(){
+  const k = slot();
+  if(!store[k]) store[k] = { w:{}, prior:{}, chal:["","",""], plan:[] };
+  const d = store[k];
+  if(!Array.isArray(d.chal)) d.chal = ["","",""];
+  if(!Array.isArray(d.plan)) d.plan = [];
+  // migra formato antigo {t,d} -> {t,done,prazos,doneAt} (uma vez, em memória)
+  for(let i=0;i<d.plan.length;i++){
+    const p = d.plan[i];
+    if(p.prazos===undefined){
+      d.plan[i] = { t:p.t||"", done:(p.done!=null?p.done:!!p.d), prazos:[], doneAt:p.doneAt||null };
+    }
+  }
+  if(d.plan.length===0) d.plan.push({t:"",done:false,prazos:[],doneAt:null});
+  if(d.chal.length===0) d.chal.push("");
+  return d;
+}
+
+/* ============ HELPERS ============ */
+function esc(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function todayISO(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function daysBetween(a,b){ return Math.round((new Date(b+"T00:00:00")-new Date(a+"T00:00:00"))/86400000); }
+function fmtDate(iso){ if(!iso) return "—"; const p=iso.split("-"); return p[2]+"/"+p[1]; }
+function parseBR(v){
+  if(v==null) return null;
+  let s = (""+v).trim().replace(/r\$/i,"").replace(/\s/g,"");
+  if(s==="") return null;
+  if(s.indexOf(",")>-1 && s.indexOf(".")>-1) s = s.replace(/\./g,"").replace(",",".");
+  else if(s.indexOf(",")>-1) s = s.replace(",",".");
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
+}
+// ---- Máscara de moeda BR ao vivo (campos de captação) ----
+function numToBRLInput(n){
+  if(n==null || isNaN(n)) return "";
+  return "R$ " + n.toLocaleString("pt-BR",{minimumFractionDigits:0,maximumFractionDigits:2});
+}
+function fmtBRLLive(raw){
+  const neg = raw.indexOf("-")>-1;
+  let s = raw.replace(/[^\d,]/g,"");
+  if(s==="") return neg ? "-" : "";
+  const ci = s.indexOf(",");
+  let intp = (ci>-1 ? s.slice(0,ci) : s).replace(/,/g,"");
+  let dec  = ci>-1 ? s.slice(ci+1).replace(/,/g,"").slice(0,2) : null;
+  intp = intp.replace(/^0+(?=\d)/,"");
+  if(intp==="" && dec==null) return neg ? "-" : "";
+  const intFmt = (intp===""?"0":intp).replace(/\B(?=(\d{3})+(?!\d))/g,".");
+  return "R$ " + (neg?"-":"") + intFmt + (dec!=null ? ","+dec : "");
+}
+function reformatBRL(inp){
+  const raw = inp.value, caret = inp.selectionStart==null ? raw.length : inp.selectionStart;
+  const digitsBefore = (raw.slice(0,caret).match(/\d/g)||[]).length;
+  const text = fmtBRLLive(raw);
+  inp.value = text;
+  let pos=0, seen=0;
+  while(pos<text.length && seen<digitsBefore){ if(/\d/.test(text[pos])) seen++; pos++; }
+  try{ inp.setSelectionRange(pos,pos); }catch(_){}
+}
+function parseBRLInput(v){
+  if(v==null) return null;
+  let s = (""+v).replace(/r\$/i,"").replace(/\s/g,"").replace(/\./g,"").replace(",",".");
+  if(s==="" || s==="-") return null;
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
+}
+function fmtVal(n, fmt){
+  if(n==null || isNaN(n)) return "—";
+  if(fmt==="brl"){
+    return "R$ " + n.toLocaleString("pt-BR",{minimumFractionDigits:0,maximumFractionDigits:0});
+  }
+  if(fmt==="pct") return n.toLocaleString("pt-BR",{minimumFractionDigits:0,maximumFractionDigits:2}) + "%";
+  return n.toLocaleString("pt-BR",{minimumFractionDigits:0,maximumFractionDigits:2});
+}
+function fmtBRL(n){ return "R$ " + Math.round(n).toLocaleString("pt-BR"); }
+function fmtPts(n){ return n.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1}); }
+
+function aggregate(vals, mode){
+  const arr = vals.filter(v=>v!=null && !isNaN(v));
+  if(!arr.length) return null;
+  if(mode==="sum") return arr.reduce((a,b)=>a+b,0);
+  if(mode==="avg") return arr.reduce((a,b)=>a+b,0)/arr.length;
+  if(mode==="last") return arr[arr.length-1];
+  return null;
+}
+// consolida os 4 R semanais de uma linha em um slot arbitrário
+function realMesOf(sd, rowId, agg){
+  const d = (sd && sd.w) || {};
+  if(agg==="wk4"){ const c = d[rowId]; return (c && c["r3"]!=null) ? c["r3"] : null; }
+  const vals = [0,1,2,3].map(w => { const c = d[rowId]; return c && c["r"+w]!=null ? c["r"+w] : null; });
+  return aggregate(vals, agg);
+}
+function realMes(rowId, agg){ return realMesOf(data(), rowId, agg); }
+
+/* ============ SCORE ENGINE ============ */
+function computeMonthFor(sd, cluster){
+  const ci = CLUSTER_IDX(cluster);
+  const out = {metas:[], base:0, bonus:0, detr:0, bonusRows:[]};
+  METAS.forEach(m=>{
+    const real = (m.id==="ativ") ? ativPointsOf(sd) : realMesOf(sd, m.id, m.agg);
+    const realN = (m.id==="ativ") ? (real||0) : real;  // ativ sempre tem valor (0)
+    const meta = m.meta[ci];
+    let ratio = (realN!=null && meta) ? realN/meta : 0;
+    ratio = Math.max(0, ratio);
+    if(m.cap) ratio = Math.min(ratio, 1);
+    const pts = m.peso * ratio;
+    const hasReal = (m.id==="ativ") ? (real>0) : (real!=null);
+    out.metas.push({...m, real:(m.id==="ativ"?real:real), meta, ratio, pts, hasReal});
+    out.base += pts;
+  });
+  BONUSROWS.forEach(b=>{
+    const real = realMesOf(sd, b.id, b.agg);
+    let gat = b.gatilho==="BASE" ? BASE_LIMIT[ci] : b.gatilho;
+    let hit=false;
+    if(real!=null){
+      if(b.op===">=") hit = real>=gat;
+      else if(b.op==="<") hit = real<gat;
+      else if(b.op===">") hit = real>gat;
+    }
+    let applied=0, active=false;
+    if(b.tipo==="bonus"){ active = hit; if(hit) applied = b.pts; }
+    else { active = (real!=null) ? hit : false; if(active) applied = b.pts; }
+    out.bonusRows.push({...b, real, gat, active, applied});
+    if(b.tipo==="bonus") out.bonus += applied; else out.detr += applied;
+  });
+  out.total = Math.min(out.base + out.bonus + out.detr, 120);
+  out.hasData = out.metas.some(m=>m.hasReal) || out.bonusRows.some(b=>b.real!=null);
+  return out;
+}
+function computeMonth(){ return computeMonthFor(data(), cfg.cluster); }
+
+// meses do trimestre a que 'month' pertence
+function triMonths(month){ const t0=TRIM(month)*3; return [t0,t0+1,t0+2]; }
+
+// Trimestre: derivado dos 3 meses preenchidos (sem input manual)
+function computeTriFor(name, month, cluster){
+  const ci = CLUSTER_IDX(cluster);
+  const mm = triMonths(month);
+  const sds = mm.map(x=>slotDataOf(name,x));
+  const out = {metas:[], base:0, bonus:0, detr:0, bonusRows:[], months:mm};
+  METAS.forEach(m=>{
+    const crossAgg = m.triAgg || m.agg;
+    let triReal;
+    if(m.id==="ativ") triReal = sds.reduce((s,sd)=>s+ativPointsOf(sd),0);
+    else triReal = aggregate(sds.map(sd=>realMesOf(sd,m.id,m.agg)), crossAgg);
+    const triMeta = crossAgg==="avg" ? m.meta[ci] : m.meta[ci]*3;
+    const rv = triReal!=null? triReal : 0;
+    let ratio = triMeta ? Math.max(0, rv/triMeta) : 0;
+    if(m.cap) ratio = Math.min(ratio,1);
+    const pts = m.peso*ratio;
+    const hasReal = (m.id==="ativ") ? (triReal>0) : (triReal!=null);
+    out.metas.push({...m, triReal, triMeta, ratio, pts, hasReal});
+    out.base += pts;
+  });
+  BONUSROWS.forEach(b=>{
+    const triReal = aggregate(sds.map(sd=>realMesOf(sd,b.id,b.agg)), b.triAgg || b.agg);
+    let gat = b.gatilho==="BASE" ? BASE_LIMIT[ci] : (b.triGatilho!=null ? b.triGatilho : b.gatilho);
+    let hit=false;
+    if(triReal!=null){
+      if(b.op===">=") hit = triReal>=gat;
+      else if(b.op==="<") hit = triReal<gat;
+      else if(b.op===">") hit = triReal>gat;
+    }
+    let applied=0, active=false;
+    if(b.tipo==="bonus"){ active=hit; if(hit) applied=b.pts; }
+    else { active=(triReal!=null)?hit:false; if(active) applied=b.pts; }
+    out.bonusRows.push({...b, real:triReal, gat, active, applied});
+    if(b.tipo==="bonus") out.bonus += applied; else out.detr += applied;
+  });
+  out.total = Math.min(out.base + out.bonus + out.detr, 120);
+  out.hasData = out.metas.some(m=>m.hasReal) || out.bonusRows.some(b=>b.real!=null);
+  return out;
+}
+function computeTri(){ return computeTriFor(cfg.name, cfg.month, cfg.cluster); }
+
+function payoutFor(cluster, score){
+  const ci = CLUSTER_IDX(cluster);
+  const full = BONUS.assessor[ci];
+  const pct = score>=80 ? score/100 : 0;
+  return { full, pct, value: full*pct, cap: full*1.2 };
+}
+function payout(score){ return payoutFor(cfg.cluster, score); }
+
+/* ============ RENDER ============ */
+function weekHeaders(extra){
+  let h = "<thead><tr><th style='text-align:left;padding-left:16px'>Indicador</th><th>Meta mês</th>";
+  for(let w=1;w<=4;w++) h+=`<th class='grp' colspan='2'>Semana ${w}</th>`;
+  h+="<th class='grp'>Realizado</th>";
+  h+= extra || "<th>Score</th>";
+  h+="</tr><tr><th></th><th></th>";
+  for(let w=0;w<4;w++) h+="<th class='grp wk'>P</th><th class='wk'>R</th>";
+  h+="<th class='grp'></th><th></th></tr></thead>";
+  return h;
+}
+function farol(state){ return `<span class="farol ${state}"></span>`; }
+function cellInputs(rowId, brl){
+  const d = data().w[rowId] || {};
+  let s="";
+  const cls2 = brl ? " brl" : "";
+  const attr = brl ? " data-brl='1'" : "";
+  for(let w=0;w<4;w++){
+    const pv = d["p"+w], rv = d["r"+w];
+    const p = pv!=null? (brl?numToBRLInput(pv):pv) : "";
+    const r = rv!=null? (brl?numToBRLInput(rv):rv) : "";
+    let pctHtml="";
+    if(pv!=null && rv!=null && pv!==0){
+      const pct = rv/pv*100;
+      const cls = pct>=100?"g":(pct>=70?"a":"r");
+      pctHtml = `<div class="pr-pct ${cls}" title="${pct.toFixed(0)}% do planejado realizado">${pct.toFixed(0)}%</div>`;
+    }
+    s+=`<td class='grp'><input class='cell-in p${cls2}' data-row='${rowId}' data-f='p${w}'${attr} value='${p}'></td>`;
+    s+=`<td><input class='cell-in${cls2}' data-row='${rowId}' data-f='r${w}'${attr} value='${r}'>${pctHtml}</td>`;
+  }
+  return s;
+}
+
+function scalesSVG(){
+  return `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M8 21h8M4 7h16M12 4.5 6 7M12 4.5 18 7"/><path d="M6 7 3.5 12.5a2.5 2.5 0 0 0 5 0L6 7ZM18 7l-2.5 5.5a2.5 2.5 0 0 0 5 0L18 7Z"/></svg>`;
+}
+function triHeaders(months, extra){
+  let h="<thead><tr><th style='text-align:left;padding-left:16px'>Indicador</th><th>Meta tri</th>";
+  months.forEach(mi=> h+=`<th>${MONTHS[mi].slice(0,3)}</th>`);
+  h+="<th class='grp'>Realizado Tri</th>";
+  h+= extra || "<th>Score</th>";
+  h+="</tr></thead>";
+  return h;
+}
+function monthVal(name, mm, id, agg){
+  const sd=slotDataOf(name,mm);
+  if(id==="ativ") return ativPointsOf(sd);
+  return realMesOf(sd, id, agg);
+}
+
+function renderMetas(mo, tri){
+  let h;
+  if(period==="tri"){
+    const months=tri.months;
+    h=triHeaders(months); h+="<tbody>";
+    tri.metas.forEach(m=>{
+      const cls=m.ratio>=1?"full":(m.pts>0?"part":"zero");
+      const farolState=!m.hasReal?"n":(m.ratio>=1?"g":"r");
+      h+=`<tr><td class='rowname'>${farol(farolState)}${m.nome}${m.sub?`<div class='rowmeta'>${m.sub}</div>`:""}</td>`;
+      h+=`<td class='metacell'>${m.id==="ativ"?fmtPts(m.triMeta)+" pts":fmtVal(m.triMeta,m.fmt)}<div class='rowmeta'>peso ${m.peso}${m.cap?"":" · sem teto"}</div></td>`;
+      months.forEach(mi=>{ const v=monthVal(cfg.name,mi,m.id,m.agg); h+=`<td class='real'>${m.id==="ativ"?fmtPts(v)+" pts":(v!=null?fmtVal(v,m.fmt):"—")}</td>`; });
+      h+=`<td class='real grp'>${m.id==="ativ"?fmtPts(m.triReal)+" pts":fmtVal(m.triReal,m.fmt)}</td>`;
+      h+=`<td class='pts ${cls}' title='${(m.ratio*100).toFixed(0)}% da meta'>${fmtPts(m.pts)}</td></tr>`;
+    });
+    h+="</tbody>";
+    h+=`<tfoot><tr><td colspan='${2+months.length+1}' style='text-align:right'>Subtotal metas</td><td class='num'>${fmtPts(tri.base)}</td></tr></tfoot>`;
+    document.getElementById("tblMetas").innerHTML=h; return;
+  }
+  // ===== visão MÊS =====
+  h = weekHeaders(); h+="<tbody>";
+  mo.metas.forEach(m=>{
+    const cls = m.ratio>=1?"full":(m.pts>0?"part":"zero");
+    const barW = Math.min(m.ratio*100,100).toFixed(0);
+    const barCol = m.ratio>1 ? "var(--gold)" : "var(--green)";
+    const farolState = !m.hasReal ? "n" : (m.ratio>=1 ? "g" : "r");
+    if(m.calc){
+      h+=`<tr><td class='rowname'>${farol(farolState)}${m.nome} <button class='calc-btn' id='ativCalcBtn' title='Calculadora de ativação ponderada'>${scalesSVG()}</button><div class='rowmeta'>${m.sub}</div></td>`;
+      h+=`<td class='metacell'>${fmtPts(m.meta)} pts<div class='rowmeta'>peso ${m.peso} · sem teto</div></td>`;
+      h+=`<td colspan='8' class='calc-cell'>Pontos ponderados do mês: <b>${fmtPts(m.real)}</b> &nbsp;·&nbsp; <button class='calc-link' id='ativCalcLink'>abrir calculadora por faixa</button></td>`;
+      h+=`<td class='real grp'>${fmtPts(m.real)} pts</td>`;
+      h+=`<td class='pts ${cls}' title='${(m.ratio*100).toFixed(0)}% da meta'>${fmtPts(m.pts)}<div class='barmini'><i style='width:${barW}%;background:${barCol}'></i></div></td></tr>`;
+      return;
+    }
+    const atg = m.meta ? " · "+(m.ratio*100).toFixed(0)+"% da meta" : "";
+    h+=`<tr><td class='rowname'>${farol(farolState)}${m.nome}${m.sub?`<div class='rowmeta'>${m.sub}</div>`:""}</td>`;
+    h+=`<td class='metacell'>${fmtVal(m.meta, m.fmt)}<div class='rowmeta'>peso ${m.peso}${m.cap?"":" · sem teto"}</div></td>`;
+    h+=cellInputs(m.id, m.fmt==="brl");
+    h+=`<td class='real grp'>${fmtVal(m.real, m.fmt)}</td>`;
+    h+=`<td class='pts ${cls}' title='${fmtPts(m.pts)} pts${atg}'>${fmtPts(m.pts)}<div class='barmini'><i style='width:${barW}%;background:${barCol}'></i></div></td></tr>`;
+  });
+  h+="</tbody>";
+  h+=`<tfoot><tr><td colspan='11' style='text-align:right'>Subtotal metas</td><td class='num'>${fmtPts(mo.base)}</td></tr></tfoot>`;
+  document.getElementById("tblMetas").innerHTML = h;
+}
+
+function renderOps(mo, tri){
+  if(period==="tri"){
+    const months=tri.months;
+    let h=triHeaders(months, "<th>Total tri</th>"); h+="<tbody>";
+    OPS.forEach(o=>{
+      const vals=months.map(mi=>monthVal(cfg.name,mi,o.id,o.agg));
+      const tot=aggregate(vals,o.agg);
+      h+=`<tr><td class='rowname'>${o.nome}</td><td class='metacell'>—</td>`;
+      vals.forEach(v=>{ h+=`<td class='real'>${v!=null?fmtVal(v,"num"):"—"}</td>`; });
+      h+=`<td class='real grp'>${tot!=null?fmtVal(tot,"num"):"—"}</td>`;
+      h+=`<td class='pts zero'>${tot!=null?fmtVal(tot,"num"):"—"}</td></tr>`;
+    });
+    h+="</tbody>"; document.getElementById("tblOps").innerHTML=h; return;
+  }
+  let h = weekHeaders("<th>Total mês</th>"); h+="<tbody>";
+  OPS.forEach(o=>{
+    const real = realMes(o.id, o.agg);
+    h+=`<tr><td class='rowname'>${o.nome}</td><td class='metacell'>—</td>`;
+    h+=cellInputs(o.id);
+    h+=`<td class='real grp'>${real!=null?fmtVal(real,"num"):"—"}</td>`;
+    h+=`<td class='pts zero'>${real!=null?fmtVal(real,"num"):"—"}</td></tr>`;
+  });
+  h+="</tbody>"; document.getElementById("tblOps").innerHTML=h;
+}
+
+function renderBonus(mo, tri){
+  const ci = CLUSTER_IDX(cfg.cluster);
+  if(period==="tri"){
+    const months=tri.months;
+    let h=triHeaders(months, "<th>Efeito</th>"); h+="<tbody>";
+    tri.bonusRows.forEach(b=>{
+      const gatBase = (b.triGatilho!=null ? b.triGatilho : b.gatilho);
+      const gatTxt = gatBase==="BASE" ? BASE_LIMIT[ci] : gatBase;
+      const metaTxt = (b.tipo==="bonus"?"≥ ":(b.op===">"?"máx ":"mín ")) + fmtVal(gatTxt, b.fmt);
+      const farolState = b.real==null ? "n" : (b.tipo==="bonus" ? (b.active?"g":"r") : (b.active?"r":"g"));
+      let flag,fcls;
+      if(b.tipo==="bonus"){ flag=b.active?`+${b.pts}`:"0"; fcls=b.active?"on":"neutral"; }
+      else { flag=b.active?`${b.applied}`:"ok"; fcls=b.active?"off":"on"; }
+      h+=`<tr><td class='rowname'>${farol(farolState)}${b.nome}<div class='rowmeta'>${b.reg||("bônus +"+b.pts)}</div></td>`;
+      h+=`<td class='metacell'>${metaTxt}</td>`;
+      months.forEach(mi=>{ const v=monthVal(cfg.name,mi,b.id,b.agg); h+=`<td class='real'>${v!=null?fmtVal(v,b.fmt):"—"}</td>`; });
+      h+=`<td class='real grp'>${b.real!=null?fmtVal(b.real,b.fmt):"—"}</td>`;
+      h+=`<td><span class='flag ${fcls}'>${flag}</span></td></tr>`;
+    });
+    h+="</tbody>";
+    h+=`<tfoot><tr><td colspan='${2+months.length+1}' style='text-align:right'>Aceleradores ${tri.bonus>=0?"+":""}${tri.bonus} · Detratores ${tri.detr}</td><td class='num'>${tri.bonus+tri.detr>=0?"+":""}${tri.bonus+tri.detr} pts</td></tr></tfoot>`;
+    document.getElementById("tblBonus").innerHTML=h; return;
+  }
+  let h = weekHeaders("<th>Efeito</th>"); h+="<tbody>";
+  mo.bonusRows.forEach(b=>{
+    const gatTxt = b.gatilho==="BASE" ? BASE_LIMIT[ci] : b.gatilho;
+    const metaTxt = (b.tipo==="bonus"?"≥ ":(b.op===">"?"máx ":"mín ")) + fmtVal(gatTxt, b.fmt);
+    let flag, fcls;
+    if(b.tipo==="bonus"){ flag = b.active?`+${b.pts}`:"0"; fcls = b.active?"on":"neutral"; }
+    else { flag = b.active?`${b.applied}`:"ok"; fcls = b.active?"off":"on"; }
+    const farolState = b.real==null ? "n" : (b.tipo==="bonus" ? (b.active?"g":"r") : (b.active?"r":"g"));
+    h+=`<tr><td class='rowname'>${farol(farolState)}${b.nome}<div class='rowmeta'>${b.reg||("bônus +"+b.pts)}</div></td>`;
+    h+=`<td class='metacell'>${metaTxt}</td>`;
+    h+=cellInputs(b.id);
+    h+=`<td class='real grp'>${b.real!=null?fmtVal(b.real,b.fmt):"—"}</td>`;
+    h+=`<td><span class='flag ${fcls}'>${flag}</span></td></tr>`;
+  });
+  h+="</tbody>";
+  h+=`<tfoot><tr><td colspan='11' style='text-align:right'>Aceleradores ${mo.bonus>=0?"+":""}${mo.bonus} · Detratores ${mo.detr}</td>`+
+     `<td class='num'>${mo.bonus+mo.detr>=0?"+":""}${mo.bonus+mo.detr} pts</td></tr></tfoot>`;
+  document.getElementById("tblBonus").innerHTML = h;
+}
+
+function renderHero(mo, tri){
+  const showScore = period==="mes" ? mo.total : tri.total;
+  document.getElementById("heroScore").textContent = fmtPts(showScore);
+  document.getElementById("heroMonthLbl").textContent = period==="mes" ? "· "+MONTHS[cfg.month] : "· "+(TRIM(cfg.month)+1)+"º trimestre";
+  const pctW = Math.min(showScore/120*100,100);
+  const fill = document.getElementById("meterFill");
+  fill.style.width = pctW+"%";
+  const hit = showScore>=80;
+  fill.className = "meter-fill "+(hit?"hit":"miss");
+  const vd = document.getElementById("heroVerdict");
+  if(hit){ vd.className="verdict hit"; vd.textContent = "bônus liberado · "+Math.round(showScore)+"%"; }
+  else { vd.className="verdict miss"; vd.textContent = "faltam "+fmtPts(80-showScore)+" pts p/ o mínimo"; }
+
+  // money = sempre trimestre (é o que paga)
+  const pay = payout(tri.total);
+  document.getElementById("heroMoney").textContent = pay.value>0 ? fmtBRL(pay.value) : "R$ 0";
+  document.getElementById("heroMoneySub").textContent = pay.value>0
+    ? `${Math.round(tri.total)}% de ${fmtBRL(pay.full)} · Assessor ${cfg.cluster}`
+    : `abaixo de 80 pts no trimestre — sem bônus`;
+  document.getElementById("heroTriScore").textContent = fmtPts(tri.total);
+  document.getElementById("heroFullBonus").textContent = fmtBRL(pay.full);
+  document.getElementById("heroCapBonus").textContent = fmtBRL(pay.cap);
+
+  renderNudges(mo, tri);
+}
+
+function renderNudges(mo, tri){
+  const el = document.getElementById("nudges");
+  const nudges = [];
+  // 1) destravar o bônus — SOMENTE na visão trimestre (é o que paga)
+  if(period==="tri"){
+    const falta = 80 - tri.total;
+    if(falta>0.05){
+      nudges.push(`<div class="nudge"><div class="n-t">Para destravar o bônus</div>Faltam <b>${fmtPts(falta)} pts</b> para os 80 mínimos do trimestre.</div>`);
+    } else {
+      nudges.push(`<div class="nudge"><div class="n-t">Mínimo atingido</div>Você está <b>${fmtPts(tri.total-80)} pts</b> acima do piso. Cada ponto extra vira bônus até 120.</div>`);
+    }
+  }
+  // 2) maior alavanca (com base nas metas do mês)
+  let best=null;
+  mo.metas.forEach(m=>{
+    if(m.ratio<1 && m.meta){
+      const gap = m.peso*(1-m.ratio);
+      const faltaReal = m.meta - (m.real||0);
+      if(!best || gap>best.gap) best = {m, gap, faltaReal};
+    }
+  });
+  if(best){
+    const fr = best.m.fmt==="brl" ? fmtBRL(best.faltaReal) : fmtVal(best.faltaReal, best.m.fmt);
+    nudges.push(`<div class="nudge"><div class="n-t">Maior alavanca</div><b>${best.m.nome}</b>: faltam ${fr} para bater a meta e somar <b>+${fmtPts(best.gap)} pts</b>.</div>`);
+  }
+  // 3) detrator ativo
+  const det = mo.bonusRows.find(b=>b.tipo==="detr" && b.active);
+  if(det){
+    nudges.push(`<div class="nudge"><div class="n-t" style="color:var(--red)">Detrator ativo</div><b>${det.nome}</b> está tirando <b>${det.applied} pts</b>. Corrigir recupera pontuação cheia.</div>`);
+  }
+  // 4) acelerador disponível — sempre que ainda não somou todos os aceleradores
+  const bonusFalt = mo.bonusRows.filter(b=>b.tipo==="bonus" && !b.active);
+  if(bonusFalt.length){
+    nudges.push(`<div class="nudge"><div class="n-t">Acelerador disponível</div>Batendo <b>${bonusFalt.map(b=>b.nome).join(", ")}</b> você soma <b>+${bonusFalt.reduce((a,b)=>a+b.pts,0)} pts</b>.</div>`);
+  }
+  el.innerHTML = nudges.join("");
+}
+
+function renderPlan(){
+  const d = data();
+  // ---- Desafios (expansível) ----
+  let ch="";
+  d.chal.forEach((c,i)=>{
+    ch+=`<div class="plan-item"><span class="n">${i+1}</span>`+
+        `<textarea data-chal="${i}" placeholder="Desafio ${i+1}">${esc(c)}</textarea>`+
+        `<button class="mini-x" data-chalrm="${i}" title="remover">×</button></div>`;
+  });
+  ch+=`<button class="btn ghost addbtn" id="addChal">+ desafio</button>`;
+  document.getElementById("challenges").innerHTML = ch;
+
+  // ---- Plano de ação (prazo + histórico) ----
+  const hoje = todayISO();
+  let totReplan=0, totAdiado=0, atrasadas=0;
+  let pl="";
+  d.plan.forEach((p,i)=>{
+    const cur   = p.prazos.length ? p.prazos[p.prazos.length-1].d : null;
+    const first = p.prazos.length ? p.prazos[0].d : null;
+    const replans = Math.max(0, p.prazos.length-1);
+    const adiado  = (first && cur) ? daysBetween(first, cur) : 0;
+    const overdue = cur && !p.done && cur < hoje;
+    totReplan += replans; totAdiado += Math.max(0, adiado); if(overdue) atrasadas++;
+
+    let statusLine="";
+    if(p.done){
+      const onTime = (p.doneAt && cur) ? p.doneAt <= cur : true;
+      statusLine = `<span class="tag ${onTime?"ok":"late"}">concluída${p.doneAt?" em "+fmtDate(p.doneAt):""}${onTime?"":" · fora do prazo"}</span>`;
+    } else if(overdue){
+      statusLine = `<span class="tag late">atrasada · venceu ${fmtDate(cur)}</span>`;
+    }
+    let hist="";
+    if(replans>0){
+      const chain = p.prazos.map(x=>fmtDate(x.d)).join(" → ");
+      hist = `<div class="hist">↳ replanejada <b>${replans}×</b> · adiada <b>${adiado} dia${adiado===1?"":"s"}</b> desde o 1º prazo <span class="chain">${chain}</span></div>`;
+    }
+    pl+=`<div class="plan-item act"><span class="n">${i+1}</span><div class="act-body">`+
+        `<textarea data-plan="${i}" placeholder="Ação ${i+1} — o que será feito">${esc(p.t)}</textarea>`+
+        `<div class="act-row">`+
+          `<label class="mini-lbl">Prazo <input type="date" data-prazo="${i}" value="${cur||""}"></label>`+
+          `<label class="chk"><input type="checkbox" data-done="${i}" ${p.done?"checked":""}> concluída</label>`+
+          statusLine+
+          `<button class="mini-x" data-planrm="${i}" title="remover ação">×</button>`+
+        `</div>${hist}</div></div>`;
+  });
+  pl+=`<button class="btn ghost addbtn" id="addPlan">+ ação</button>`;
+
+  let resumo="";
+  if(totReplan>0 || atrasadas>0){
+    resumo = `<div class="plan-summary">Replanejamentos: <b>${totReplan}</b> · Dias postergados no total: <b>${totAdiado}</b>`+
+             `${atrasadas?` · <span style="color:var(--red)">Ações atrasadas: <b>${atrasadas}</b></span>`:""}</div>`;
+  }
+  document.getElementById("plans").innerHTML = resumo + pl;
+  wirePlan();
+}
+
+// Copia as ações em aberto (não concluídas) do mês anterior para o mês atual.
+function copyOpenActions(){
+  if(cfg.month<=0){ alert("Não há mês anterior para copiar (Janeiro é o primeiro mês)."); return; }
+  const prevMonth = cfg.month-1;
+  const prev = store[cfg.name + "|" + prevMonth];
+  const abertas = (prev && Array.isArray(prev.plan))
+    ? prev.plan.filter(p=>p && !p.done && (p.t||"").trim()) : [];
+  if(!abertas.length){ alert("Nenhuma ação em aberto em "+MONTHS[prevMonth]+"."); return; }
+  const d = data();
+  // se o mês atual só tem o placeholder vazio, começa limpo
+  if(d.plan.length===1 && !(d.plan[0].t||"").trim() && !d.plan[0].done) d.plan = [];
+  const existentes = new Set(d.plan.map(p=>(p.t||"").trim()));
+  let add=0;
+  abertas.forEach(p=>{
+    const t=(p.t||"").trim();
+    if(existentes.has(t)) return;                       // evita duplicar
+    const ultimo = (p.prazos && p.prazos.length) ? p.prazos[p.prazos.length-1].d : null;
+    d.plan.push({ t:p.t, done:false, doneAt:null, prazos: ultimo?[{d:ultimo, at:new Date().toISOString()}]:[] });
+    existentes.add(t); add++;
+  });
+  if(!d.plan.length) d.plan.push({t:"",done:false,prazos:[],doneAt:null});
+  persist(); renderPlan();
+  alert(add ? (add+" ação(ões) em aberto copiada(s) de "+MONTHS[prevMonth]+".")
+            : "As ações em aberto de "+MONTHS[prevMonth]+" já estavam neste mês.");
+}
+
+/* ============ CAPTAÇÃO CHART ============ */
+function fmtCompact(n){
+  const s = n<0 ? "-" : "";
+  const a = Math.abs(n);
+  if(a>=1e6) return s+"R$ "+(a/1e6).toLocaleString("pt-BR",{maximumFractionDigits:1})+"M";
+  if(a>=1e3) return s+"R$ "+Math.round(a/1e3).toLocaleString("pt-BR")+"k";
+  return s+"R$ "+Math.round(a).toLocaleString("pt-BR");
+}
+const CHART_META = {
+  captacao: {title:"Captação mensal"},
+  roa:      {title:"ROA XP mensal"},
+  ativ:     {title:"Ativação Ponderada mensal"},
+  divers:   {title:"%Diversificação PJ2 mensal"}
+};
+function renderCaptChart(){
+  document.getElementById("chartWho").textContent = cfg.name==="—" ? "assessor" : cfg.name;
+  document.getElementById("chartTitle").textContent = (CHART_META[chartMetric]||CHART_META.captacao).title;
+  if(chartMetric==="captacao") renderCaptStacked();
+  else renderMetricChart(chartMetric);
+}
+function setLegend(html){ document.getElementById("chartLegend").innerHTML = html; }
+function renderCaptStacked(){
+  setLegend(`<span><i style="background:var(--green)"></i> Captação PF</span>`+
+            `<span><i style="background:var(--pj)"></i> Captação PJ <em>(Total − PF)</em></span>`+
+            `<span><i style="background:var(--ink)"></i> rótulo = Captação Total</span>`);
+  const el = document.getElementById("captChart");
+  const rows=[];
+  for(let m=0;m<12;m++){
+    const sd = slotDataOf(cfg.name, m);
+    const pf = realMesOf(sd,"capPF","sum");
+    const tot= realMesOf(sd,"capTot","sum");
+    rows.push({m, pf:pf||0, tot:tot||0, pj:(tot||0)-(pf||0), has:(pf!=null||tot!=null)});
+  }
+  if(!rows.some(r=>r.has)){
+    el.innerHTML = `<div class="chart-empty">Preencha o realizado de captação (PF e Total) nas semanas para ver a evolução mês a mês.</div>`;
+    return;
+  }
+  let yMax=0, yMin=0;
+  rows.forEach(r=>{
+    const pos=(r.pf>0?r.pf:0)+(r.pj>0?r.pj:0);
+    const neg=(r.pf<0?r.pf:0)+(r.pj<0?r.pj:0);
+    yMax=Math.max(yMax,pos,r.tot); yMin=Math.min(yMin,neg,r.tot);
+  });
+  if(yMax===0 && yMin===0) yMax=1;
+  const range=(yMax-yMin)||1; yMax += range*0.15;
+  const W=760,H=340, mL=56,mR=14,mT=16,mB=34, iW=W-mL-mR, iH=H-mT-mB;
+  const mapY=v=> mT + (yMax-v)/((yMax-yMin)||1)*iH;
+  const step=iW/12, bw=step*0.52;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Captação mensal">`;
+  for(let t=0;t<=4;t++){
+    const v=yMin+(yMax-yMin)*t/4, y=mapY(v);
+    svg+=`<line class="axis-line" x1="${mL}" y1="${y.toFixed(1)}" x2="${W-mR}" y2="${y.toFixed(1)}"/>`;
+    svg+=`<text class="grid-lbl" x="${mL-6}" y="${(y+3).toFixed(1)}" text-anchor="end">${fmtCompact(v)}</text>`;
+  }
+  const yz=mapY(0);
+  svg+=`<line class="zero-line" x1="${mL}" y1="${yz.toFixed(1)}" x2="${W-mR}" y2="${yz.toFixed(1)}"/>`;
+  rows.forEach((r,i)=>{
+    const cx=mL+step*i+(step-bw)/2;
+    if(r.has){
+      let posC=0, negC=0;
+      [{v:r.pf,c:"var(--green)",l:"PF"},{v:r.pj,c:"var(--pj)",l:"PJ"}].forEach(seg=>{
+        if(!seg.v) return;
+        let yT,yB;
+        if(seg.v>=0){ yT=mapY(posC+seg.v); yB=mapY(posC); posC+=seg.v; }
+        else { yT=mapY(negC); yB=mapY(negC+seg.v); negC+=seg.v; }
+        const h=Math.max(0.6, yB-yT);
+        svg+=`<rect class="bar-seg" x="${cx.toFixed(1)}" y="${yT.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" fill="${seg.c}" rx="2"><title>${MONTHS[r.m]} · ${seg.l}: ${fmtCompact(seg.v)}</title></rect>`;
+      });
+      const topY=mapY(Math.max(posC, r.tot, 0));
+      svg+=`<text class="bar-total" x="${(cx+bw/2).toFixed(1)}" y="${(topY-6).toFixed(1)}" text-anchor="middle">${fmtCompact(r.tot)}</text>`;
+    }
+    svg+=`<text class="bar-month" x="${(cx+bw/2).toFixed(1)}" y="${(H-12).toFixed(1)}" text-anchor="middle">${MONTHS[r.m].slice(0,3)}</text>`;
+  });
+  svg+=`</svg>`;
+  el.innerHTML=svg;
+}
+// Gráfico de série única (ROA, Ativação, Diversificação) mês a mês
+function renderMetricChart(id){
+  const el = document.getElementById("captChart");
+  const def = METAS.find(m=>m.id===id);
+  const ci = CLUSTER_IDX(cfg.cluster);
+  const meta = id==="ativ" ? 3 : def.meta[ci];
+  const isPts = id==="ativ";
+  const fmt = v => v==null ? "—" : (isPts ? fmtPts(v)+" pts" : fmtVal(v, def.fmt));
+  setLegend(`<span><i style="background:var(--green)"></i> ${def.nome}</span>`+
+            `<span><i style="background:var(--gold)"></i> meta (${fmt(meta)})</span>`);
+  const rows=[];
+  for(let m=0;m<12;m++){
+    const sd = slotDataOf(cfg.name, m);
+    const v = id==="ativ" ? ativPointsOf(sd) : realMesOf(sd, id, def.agg);
+    const has = id==="ativ" ? (v>0) : (v!=null);
+    rows.push({m, v:v||0, has});
+  }
+  if(!rows.some(r=>r.has)){
+    el.innerHTML = `<div class="chart-empty">Sem dados de ${def.nome} para exibir a evolução mês a mês.</div>`;
+    return;
+  }
+  let yMax=meta;
+  rows.forEach(r=>{ if(r.has) yMax=Math.max(yMax, r.v); });
+  yMax = yMax*1.15 || 1;
+  const W=760,H=340, mL=56,mR=14,mT=16,mB=34, iW=W-mL-mR, iH=H-mT-mB;
+  const mapY=v=> mT + (yMax-v)/(yMax||1)*iH;
+  const step=iW/12, bw=step*0.52;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${def.nome} mensal">`;
+  for(let t=0;t<=4;t++){
+    const v=yMax*t/4, y=mapY(v);
+    svg+=`<line class="axis-line" x1="${mL}" y1="${y.toFixed(1)}" x2="${W-mR}" y2="${y.toFixed(1)}"/>`;
+    svg+=`<text class="grid-lbl" x="${mL-6}" y="${(y+3).toFixed(1)}" text-anchor="end">${isPts?fmtPts(v):fmtVal(v,def.fmt)}</text>`;
+  }
+  const ym=mapY(meta);
+  svg+=`<line x1="${mL}" y1="${ym.toFixed(1)}" x2="${W-mR}" y2="${ym.toFixed(1)}" stroke="var(--gold)" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+  rows.forEach((r,i)=>{
+    const cx=mL+step*i+(step-bw)/2;
+    if(r.has){
+      const col = r.v>=meta ? "var(--green)" : "var(--red)";
+      const yT=mapY(r.v), h=Math.max(0.6, mapY(0)-yT);
+      svg+=`<rect class="bar-seg" x="${cx.toFixed(1)}" y="${yT.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" fill="${col}" rx="2"><title>${MONTHS[r.m]}: ${fmt(r.v)}</title></rect>`;
+      svg+=`<text class="bar-total" x="${(cx+bw/2).toFixed(1)}" y="${(yT-6).toFixed(1)}" text-anchor="middle">${fmt(r.v)}</text>`;
+    }
+    svg+=`<text class="bar-month" x="${(cx+bw/2).toFixed(1)}" y="${(H-12).toFixed(1)}" text-anchor="middle">${MONTHS[r.m].slice(0,3)}</text>`;
+  });
+  svg+=`</svg>`;
+  el.innerHTML=svg;
+}
+
+/* ============ TEAM COMPILATION ============ */
+const QNAMES=["1º","2º","3º","4º"];
+// Abreviações e colunas da matriz assessor × indicadores (visão Equipe)
+const ABBR = { capTot:"Cap.Bruta", capPF:"Cap.PF", roa:"ROA", ativ:"Ativ", divers:"Div%",
+  reuBase:"Reu.Base", indic:"Indic", leads:"Leads", reuLead:"Reu.Lead", cross:"Cross",
+  modelo:"Mod", fp:"FP", opin:"Opin", nps:"NPS", npsResp:"Resp", baseCli:"Base", semAp:"s/Ap%" };
+const _ALLROWS = METAS.concat(OPS, BONUSROWS);
+const _mkCol = c => ({...c, lbl:ABBR[c.id]||c.id, title:(_ALLROWS.find(x=>x.id===c.id)||{}).nome || c.id});
+// Quadro 1: finalísticos (metas) + aceleradores/detratores — com coloração
+const MATRIX_COLS_FIN = [
+  ...METAS.map(m=>({id:m.id, fmt:m.fmt, ativ:m.id==="ativ"})),
+  ...BONUSROWS.map(b=>({id:b.id, fmt:b.fmt}))
+].map(_mkCol);
+// Quadro 2: indicadores comerciais (operacionais) — sem coloração
+const MATRIX_COLS_COM = OPS.map(o=>({id:o.id, fmt:"num"})).map(_mkCol);
+function fmtCell(v, col){
+  if(v==null || isNaN(v)) return "—";
+  if(col.ativ) return fmtPts(v);
+  if(col.id==="capTot" || col.id==="capPF") return fmtCompact(v);
+  if(col.fmt==="pct") return fmtVal(v,"pct");
+  return (Math.round(v*10)/10).toLocaleString("pt-BR");
+}
+// Compilado da equipe no TRIMESTRE selecionado.
+function computeTeam(quarter){
+  const roster = ROSTER.filter(r=>r.c);
+  const month0 = quarter*3;
+  const rows=[]; let bonusTotal=0, scoreSum=0, withData=0;
+  const metaPool  = METAS.map(m=>({m, sumReal:0, sumMeta:0, ratios:[], vals:[]}));
+  const bonusPool = BONUSROWS.map(b=>({b, vals:[], gats:[]}));
+  const mm = triMonths(month0);
+  roster.forEach(r=>{
+    const tri = computeTriFor(r.n, month0, r.c);
+    const pay = payoutFor(r.c, tri.total);
+    const cells = {};
+    tri.metas.forEach(m=>{ cells[m.id] = { v:m.triReal, ok: m.hasReal ? (m.ratio>=1) : null }; });
+    OPS.forEach(o=>{ cells[o.id] = { v: aggregate(mm.map(mi=>monthVal(r.n,mi,o.id,o.agg)), o.triAgg||o.agg), ok:null }; });
+    tri.bonusRows.forEach(br=>{ cells[br.id] = { v:br.real, ok: (br.real==null) ? null : (br.tipo==="bonus" ? br.active : !br.active) }; });
+    rows.push({name:r.n, cluster:r.c, tri:tri.total, bonus:pay.value, has:tri.hasData, cells});
+    if(tri.hasData){ withData++; scoreSum+=tri.total; bonusTotal+=pay.value; }
+    tri.metas.forEach((m,i)=>{
+      const cross = metaPool[i].m.triAgg || metaPool[i].m.agg;
+      if(cross==="avg"){ if(m.hasReal){ metaPool[i].ratios.push(m.ratio); metaPool[i].vals.push(m.triReal); } }
+      else { metaPool[i].sumReal += (m.triReal||0); metaPool[i].sumMeta += (m.triMeta||0); }
+    });
+    tri.bonusRows.forEach((br,i)=>{ if(br.real!=null){ bonusPool[i].vals.push(br.real); bonusPool[i].gats.push(br.gat); } });
+  });
+  const avg = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : null;
+  let teamBase=0;
+  const metaScored = metaPool.map(p=>{
+    const cross = p.m.triAgg || p.m.agg;
+    let ratio, real, meta;
+    if(cross==="avg"){ ratio = p.ratios.length?avg(p.ratios):0; real = avg(p.vals); meta = p.m.meta[0]; }
+    else { ratio = p.sumMeta ? p.sumReal/p.sumMeta : 0; real = p.sumReal; meta = p.sumMeta; }
+    ratio=Math.max(0,ratio); if(p.m.cap) ratio=Math.min(ratio,1);
+    const pts=p.m.peso*ratio; teamBase+=pts;
+    return {id:p.m.id, nome:p.m.nome, ratio, pts, peso:p.m.peso, real, meta, fmt:p.m.fmt};
+  });
+  const bonusScored = bonusPool.map(p=>{
+    const v = avg(p.vals);
+    const gat = p.gats.length ? avg(p.gats) : (p.b.triGatilho!=null?p.b.triGatilho:p.b.gatilho);
+    let hit=false;
+    if(v!=null){ if(p.b.op===">=")hit=v>=gat; else if(p.b.op==="<")hit=v<gat; else if(p.b.op===">")hit=v>gat; }
+    return {nome:p.b.nome, tipo:p.b.tipo, val:v, gat, hit, fmt:p.b.fmt, pts:p.b.pts, op:p.b.op};
+  });
+  rows.sort((a,b)=> (b.has-a.has) || (b.tri-a.tri));
+  return {rows, teamBase, metaScored, bonusScored, bonusTotal, avgScore: withData?scoreSum/withData:0, withData, total:roster.length, quarter};
+}
+function renderTeam(){
+  const t = computeTeam(cfg.quarter);
+  const qn = QNAMES[cfg.quarter];
+  const el = document.getElementById("viewEquipe");
+  const target=80, hit=t.teamBase>=target, gaugePct=Math.min(t.teamBase/120*100,100);
+  let html=`<div class="team-top">
+    <div class="team-card">
+      <div class="team-cap">Atingimento de metas · Equipe ${esc(cfg.team)} · ${qn} Trimestre</div>
+      <div class="team-big num" style="color:${hit?'var(--green)':'var(--red)'}">${fmtPts(t.teamBase)}</div>
+      <div class="team-sub">metas somadas da equipe · mínimo 80 pts ${hit?'· <b style="color:var(--green)">atingido</b>':`· faltam ${fmtPts(target-t.teamBase)} pts`} · score médio individual ${fmtPts(t.avgScore)}</div>
+      <div class="meter" style="margin-top:16px">
+        <div class="meter-track"><div class="meter-fill ${hit?'hit':'miss'}" style="width:${gaugePct}%"></div><div class="meter-floor"></div></div>
+        <div class="meter-scale"><span>0</span><span>40</span><span>80</span><span>120</span></div>
+      </div>
+    </div>
+  </div>`;
+  html+=`<div class="section"><div class="sec-head"><span class="sec-tag metas"></span><h2>Assessores · ${qn} Tri</h2><span class="hint">ranking por score do trimestre</span></div>
+    <div class="tscroll"><table class="rank"><thead><tr>
+      <th style="text-align:left;padding-left:16px">Assessor</th><th>Cluster</th><th>Score tri</th><th>Bônus projetado</th></tr></thead><tbody>`;
+  t.rows.forEach(r=>{
+    if(!r.has){
+      html+=`<tr><td class="rname">${r.name}</td><td><span class="cl">${r.cluster}</span></td><td class="sc none">—</td><td class="money" style="color:var(--ink-faint)">sem dados</td></tr>`;
+      return;
+    }
+    html+=`<tr><td class="rname">${r.name}</td><td><span class="cl">${r.cluster}</span></td>
+      <td class="sc ${r.tri>=80?'hit':'miss'}">${fmtPts(r.tri)}</td>
+      <td class="money">${r.bonus>0?fmtBRL(r.bonus):'—'}</td></tr>`;
+  });
+  html+=`</tbody></table></div></div>`;
+  html+=`<div class="section"><div class="sec-head"><span class="sec-tag metas"></span><h2>Atingimento por indicador · ${qn} Tri</h2><span class="hint">captação somada · ROA e diversificação por média</span></div>
+    <div class="tscroll"><table class="rank"><thead><tr><th style="text-align:left;padding-left:16px">Indicador</th><th>Realizado</th><th>Meta</th><th>Atingimento</th><th>Pontos</th></tr></thead><tbody>`;
+  t.metaScored.forEach(p=>{
+    const realTxt = p.id==="ativ" ? (p.real!=null?fmtPts(p.real)+" pts":"—") : (p.real!=null?fmtVal(p.real,p.fmt):"—");
+    const metaTxt = p.id==="ativ" ? fmtPts(p.meta)+" pts" : (p.meta!=null?fmtVal(p.meta,p.fmt):"—");
+    html+=`<tr><td class="rname">${p.nome}</td><td class="sc">${realTxt}</td><td class="sc" style="color:var(--ink-faint)">${metaTxt}</td><td class="sc">${(p.ratio*100).toFixed(0)}%</td><td class="sc ${p.ratio>=1?'hit':''}">${fmtPts(p.pts)} / ${p.peso}</td></tr>`;
+  });
+  html+=`</tbody></table></div></div>`;
+  html+=`<div class="section"><div class="sec-head"><span class="sec-tag bonus"></span><h2>Aceleradores e detratores · ${qn} Tri</h2><span class="hint">média da equipe vs gatilho</span></div>
+    <div class="tscroll"><table class="rank"><thead><tr><th style="text-align:left;padding-left:16px">Indicador</th><th>Média equipe</th><th>Gatilho</th><th>Status</th></tr></thead><tbody>`;
+  t.bonusScored.forEach(b=>{
+    const gatTxt = (b.tipo==="bonus"?"≥ ":(b.op===">"?"máx ":"mín ")) + fmtVal(b.gat, b.fmt);
+    const valTxt = b.val!=null ? fmtVal(b.val, b.fmt) : "—";
+    const ok = b.tipo==="bonus" ? b.hit : !b.hit;
+    const statusTxt = b.val==null ? "—" : (b.tipo==="bonus" ? (b.hit?`ativo +${b.pts}`:"inativo") : (b.hit?`aplicado ${b.pts}`:"sob controle"));
+    html+=`<tr><td class="rname">${farol(b.val==null?"n":(ok?"g":"r"))}${b.nome}</td><td class="sc">${valTxt}</td><td class="sc" style="color:var(--ink-faint)">${gatTxt}</td><td class="sc ${ok?'hit':'miss'}">${statusTxt}</td></tr>`;
+  });
+  html+=`</tbody></table></div></div>`;
+  // ---- Matrizes assessor × indicadores (trimestre selecionado) ----
+  const matrixTable = (cols, titulo, colored) => {
+    let m=`<div class="section"><div class="sec-head"><span class="sec-tag ${colored?'metas':'ops'}"></span><h2>${titulo} · ${qn} Tri</h2><span class="hint">total do trimestre · passe o mouse no cabeçalho p/ nome completo</span></div>
+      <div class="tscroll"><table class="rank matrix"><thead><tr><th style="text-align:left;padding-left:16px">Assessor</th>`;
+    cols.forEach(c=>{ m+=`<th title="${esc(c.title)}">${c.lbl}</th>`; });
+    m+=`</tr></thead><tbody>`;
+    t.rows.forEach(r=>{
+      m+=`<tr><td class="rname">${r.name}</td>`;
+      cols.forEach(c=>{
+        const cell = r.cells[c.id] || {};
+        const cls = (colored && cell.ok===true) ? "cell-hit" : (colored && cell.ok===false) ? "cell-miss" : "";
+        m+=`<td class="sc ${cls}">${fmtCell(cell.v, c)}</td>`;
+      });
+      m+=`</tr>`;
+    });
+    m+=`</tbody></table></div></div>`;
+    return m;
+  };
+  html+=matrixTable(MATRIX_COLS_FIN, "Finalísticos, aceleradores e detratores", true);
+  html+=matrixTable(MATRIX_COLS_COM, "Indicadores comerciais", false);
+  el.innerHTML=html;
+}
+
+function renderAll(){
+  const A=document.getElementById("viewAssessorSections");
+  const E=document.getElementById("viewEquipe");
+  document.querySelectorAll('[data-only="assessor"]').forEach(x=>x.style.display = view==="assessor"?"":"none");
+  document.querySelectorAll('[data-only="equipe"]').forEach(x=>x.style.display = view==="equipe"?"":"none");
+  if(view==="equipe"){
+    A.style.display="none"; E.style.display="";
+    renderTeam();
+    return;
+  }
+  A.style.display=""; E.style.display="none";
+  const mo = computeMonth();
+  const tri = computeTri();
+  renderMetas(mo, tri);
+  renderOps(mo, tri);
+  renderBonus(mo, tri);
+  renderHero(mo, tri);
+  renderCaptChart();
+  document.getElementById("clusterBadge").textContent = "Cluster " + cfg.cluster;
+  wireInputs();
+  wireAtivCalc();
+}
+
+/* ============ EVENTS ============ */
+function wireInputs(){
+  document.querySelectorAll(".cell-in").forEach(inp=>{
+    if(inp.dataset.brl) inp.addEventListener("input", ()=>reformatBRL(inp));
+    inp.addEventListener("change", e=>{
+      const row=e.target.dataset.row, f=e.target.dataset.f;
+      const w = data().w; if(!w[row]) w[row]={};
+      const val = e.target.dataset.brl ? parseBRLInput(e.target.value) : parseBR(e.target.value);
+      w[row][f] = val;
+      persist(); renderAll();
+    });
+  });
+}
+/* ---- Calculadora de Ativação Ponderada ---- */
+function currentAtivInputs(){
+  return ATIV_FAIXAS.map((f,i)=>{ const el=document.querySelector(`.ativ-qty[data-faixa="${i}"]`); return el?(Math.max(0,Math.floor(+el.value||0))):0; });
+}
+function updateAtivTotal(){
+  const vals=currentAtivInputs();
+  const tot=ATIV_FAIXAS.reduce((s,f,i)=>s+vals[i]*f.w,0);
+  document.getElementById("ativTotal").textContent=fmtPts(tot);
+}
+function openAtivModal(){
+  const c = data().ativCalc || [];
+  document.getElementById("ativModalMonth").textContent = MONTHS[cfg.month];
+  let rows="";
+  ATIV_FAIXAS.forEach((f,i)=>{
+    rows+=`<tr><td class="ativ-faixa">${f.lbl}<small>${f.w.toLocaleString("pt-BR")} pts cada</small></td>`+
+          `<td><input class="ativ-qty" type="number" min="0" step="1" data-faixa="${i}" value="${c[i]!=null?c[i]:0}"></td></tr>`;
+  });
+  document.getElementById("ativRows").innerHTML=rows;
+  updateAtivTotal();
+  document.querySelectorAll(".ativ-qty").forEach(inp=>inp.addEventListener("input",updateAtivTotal));
+  document.getElementById("ativModal").style.display="flex";
+}
+function closeAtivModal(){ document.getElementById("ativModal").style.display="none"; }
+function wireAtivCalc(){
+  const btn=document.getElementById("ativCalcBtn"); if(btn) btn.addEventListener("click",openAtivModal);
+  const link=document.getElementById("ativCalcLink"); if(link) link.addEventListener("click",openAtivModal);
+}
+function wirePlan(){
+  const d = data();
+  // desafios
+  document.querySelectorAll("[data-chal]").forEach(t=>t.addEventListener("change",e=>{
+    d.chal[+e.target.dataset.chal]=e.target.value; persist();
+  }));
+  document.querySelectorAll("[data-chalrm]").forEach(b=>b.addEventListener("click",()=>{
+    d.chal.splice(+b.dataset.chalrm,1); persist(); renderPlan();
+  }));
+  const addC=document.getElementById("addChal");
+  if(addC) addC.addEventListener("click",()=>{ d.chal.push(""); persist(); renderPlan(); });
+
+  // ações
+  document.querySelectorAll("[data-plan]").forEach(t=>t.addEventListener("change",e=>{
+    d.plan[+e.target.dataset.plan].t=e.target.value; persist();
+  }));
+  document.querySelectorAll("[data-prazo]").forEach(inp=>inp.addEventListener("change",e=>{
+    const item=d.plan[+e.target.dataset.prazo]; const nv=e.target.value;
+    const cur=item.prazos.length?item.prazos[item.prazos.length-1].d:null;
+    if(nv && nv!==cur) item.prazos.push({d:nv, at:new Date().toISOString()}); // registra no histórico
+    persist(); renderPlan();
+  }));
+  document.querySelectorAll("[data-done]").forEach(c=>c.addEventListener("change",e=>{
+    const item=d.plan[+e.target.dataset.done];
+    item.done=e.target.checked; item.doneAt=e.target.checked?todayISO():null;
+    persist(); renderPlan();
+  }));
+  document.querySelectorAll("[data-planrm]").forEach(b=>b.addEventListener("click",()=>{
+    d.plan.splice(+b.dataset.planrm,1); persist(); renderPlan();
+  }));
+  const addP=document.getElementById("addPlan");
+  if(addP) addP.addEventListener("click",()=>{ d.plan.push({t:"",done:false,prazos:[],doneAt:null}); persist(); renderPlan(); });
+}
+
+function buildSelectors(){
+  const nameSel=document.getElementById("cfgName");
+  nameSel.innerHTML = ROSTER.map(r=>`<option value="${r.n}">${r.n}</option>`).join("");
+  nameSel.value = cfg.name;
+  const monthSel=document.getElementById("cfgMonth");
+  monthSel.innerHTML = MONTHS.map((m,i)=>`<option value="${i}">${m}</option>`).join("");
+  monthSel.value = cfg.month;
+  document.getElementById("cfgCluster").value = cfg.cluster;
+  document.getElementById("cfgTeam").value = cfg.team || "Gambito";
+  const qSel=document.getElementById("cfgQuarter");
+  if(qSel){ qSel.value = cfg.quarter; qSel.addEventListener("change",e=>{ cfg.quarter=+e.target.value; saveMeta(); renderAll(); }); }
+
+  nameSel.addEventListener("change",e=>{
+    cfg.name=e.target.value;
+    const r=ROSTER.find(x=>x.n===cfg.name);
+    if(r&&r.c){ cfg.cluster=r.c; document.getElementById("cfgCluster").value=r.c; }
+    saveMeta(); renderAll(); renderPlan();
+  });
+  document.getElementById("cfgCluster").addEventListener("change",e=>{cfg.cluster=e.target.value; saveMeta(); renderAll();});
+  monthSel.addEventListener("change",e=>{cfg.month=+e.target.value; saveMeta(); renderAll(); renderPlan();});
+  document.getElementById("cfgTeam").addEventListener("change",e=>{cfg.team=e.target.value; saveMeta(); renderAll();});
+  const chartSel=document.getElementById("chartSel");
+  if(chartSel){ chartSel.value=chartMetric; chartSel.addEventListener("change",e=>{chartMetric=e.target.value; renderCaptChart();}); }
+
+  // seletor de visão Assessor / Equipe
+  document.querySelectorAll("#viewSwitch button").forEach(b=>b.addEventListener("click",()=>{
+    document.querySelectorAll("#viewSwitch button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); view=b.dataset.view; renderAll();
+  }));
+  document.querySelectorAll(".ptabs button").forEach(b=>b.addEventListener("click",()=>{
+    document.querySelectorAll(".ptabs button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); period=b.dataset.period; renderAll();
+  }));
+  document.getElementById("btnSave").addEventListener("click",()=>{
+    persist(); saveMeta();
+    if(!BE) setSync("Salvo neste navegador · "+new Date().toLocaleString("pt-BR"));
+  });
+  document.getElementById("btnReset").addEventListener("click",()=>{
+    if(confirm("Limpar todos os dados de "+cfg.name+" em "+MONTHS[cfg.month]+"?")){
+      delete store[slot()]; persist(); renderAll(); renderPlan();
+    }
+  });
+  // modal ativação
+  document.getElementById("ativCancel").addEventListener("click",closeAtivModal);
+  document.getElementById("ativApply").addEventListener("click",()=>{
+    data().ativCalc = currentAtivInputs(); persist(); closeAtivModal(); renderAll();
+  });
+  document.getElementById("ativModal").addEventListener("click",e=>{ if(e.target.id==="ativModal") closeAtivModal(); });
+  const copyBtn=document.getElementById("copyPrevPlan");
+  if(copyBtn) copyBtn.addEventListener("click", copyOpenActions);
+}
+function saveMeta(){ store.meta = {...cfg}; persistLocal(); }
+
+document.getElementById("disclaimer").innerHTML =
+  "<b>Como o score é calculado.</b> Cada meta pontua proporcional ao atingimento (realizado ÷ meta). Captação Líquida PF e Ativação Ponderada <b>não têm teto</b> (podem passar do peso); as demais travam em 100% do seu peso. Os pesos somam 100. "+
+  "A <b>Ativação Ponderada</b> (peso 15) é medida em pontos por faixa (50k–300k=0,5 · 300k–1M=1,5 · 1M–5M=3 · +5M=6): meta de 3 pts/mês e 9 pts/trimestre. "+
+  "Aceleradores somam até +20 (bônus de +5 por gatilho batido) e detratores subtraem até −20. "+
+  "O score final é limitado a 120 e o bônus só é pago a partir de 80 pontos, proporcional ao score (80 pts = 80% do bônus; 120 pts = 120%). "+
+  "A visão Trimestre consolida os 3 meses do trimestre (apenas leitura, a partir do que foi lançado na visão Mês). "+
+  "O bônus é apurado trimestralmente. Os dados são salvos automaticamente na planilha da equipe (com cópia local neste navegador). "+
+  "Na visão Equipe, o atingimento consolidado soma as metas de todos os assessores (captação e ativação) e faz média das taxas (ROA e diversificação); a meta mínima da equipe é 80 pts.";
+
+async function boot(){
+  buildSelectors();
+  if(BE){
+    setSync("Conectando à planilha…");
+    try{ await beLoadAll(); setSync("Conectado à planilha · dados carregados"); }
+    catch(e){ setSync("Sem conexão com a planilha ("+e.message+") — usando dados deste navegador", true); }
+  }
+  renderAll();
+  renderPlan();
+}
+
+/* ---- Barreira de acesso (senha via hash SHA-256) ---- */
+async function sha256hex(str){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+(function accessGate(){
+  const hash = (window.GAMBITO_CONFIG && window.GAMBITO_CONFIG.ACCESS_PASSWORD_HASH) || "";
+  const ov = document.getElementById("gate");
+  const open = ()=>{ if(ov) ov.style.display="none"; boot(); };
+  if(!hash){ open(); return; }                       // sem senha configurada
+  let authed=false; try{ authed = sessionStorage.getItem("gambito_auth")===hash; }catch(e){}
+  if(authed){ open(); return; }
+  const err=document.getElementById("gateErr");
+  const inp=document.getElementById("gatePass");
+  const submit=async ()=>{
+    let h=""; try{ h = await sha256hex(inp.value); }catch(e){ err.textContent="Navegador sem suporte a hash."; err.style.display="block"; return; }
+    if(h===hash){ try{ sessionStorage.setItem("gambito_auth",hash); }catch(e){} open(); }
+    else { err.style.display="block"; inp.select(); }
+  };
+  document.getElementById("gateBtn").addEventListener("click",submit);
+  inp.addEventListener("keydown",e=>{ if(e.key==="Enter") submit(); });
+  inp.focus();
+})();
+</script>
+</body>
+</html>

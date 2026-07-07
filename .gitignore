@@ -1,0 +1,33 @@
+# Repositório público = apenas o frontend (docs/index.html), README e este arquivo.
+# Todo o resto fica LOCAL (não versionado).
+
+# Backend e documentação interna
+/backend/
+/CLAUDE.md
+/ARQUITETURA.md
+
+# Config antigo (agora embutido no index.html) e página de diagnóstico
+/docs/config.js
+/docs/config.example.js
+/docs/teste-conexao.html
+
+# Ferramentas / ambiente
+/.claude/
+.vscode/
+.idea/
+*.swp
+*~
+
+# Bases de dados / dumps (a fonte da verdade é a planilha)
+*.csv
+
+# Segredos e temporários
+secrets.*
+*.env
+*.log
+tmp/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
