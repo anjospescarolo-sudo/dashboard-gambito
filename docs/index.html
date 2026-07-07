@@ -547,28 +547,46 @@ async function beLoadAll(){
   });
   return true;
 }
-// Grava o mês inteiro (backend distribui nas 4 linhas de semana da Fonte).
-async function bePush(key){
+// Monta o corpo do POST (mês inteiro; backend distribui nas 4 linhas de semana).
+function bodyFor(key){
   const parts = key.split("|");
   const mes = +parts.pop();
   const assessor = parts.join("|");
   const rec = store[key] || {};
-  const body = { assessor, mes, w: rec.w || {}, ativCalc: rec.ativCalc || [] };
-  const r = await fetch(BE.API_URL, { method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" }, body: JSON.stringify(body) });
+  return { assessor, mes, w: rec.w || {}, ativCalc: rec.ativCalc || [] };
+}
+async function bePush(key){
+  const r = await fetch(BE.API_URL, { method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" }, body: JSON.stringify(bodyFor(key)) });
   const j = await r.json();
   if(!j.ok) throw new Error(j.error || "resposta inválida");
 }
 const _pushTimers = {};
+const _dirty = {};   // chaves com alteração ainda não confirmada na planilha
 function queuePush(key){
   if(!BE) return;
+  _dirty[key] = true;
   clearTimeout(_pushTimers[key]);
   setSync("Salvando na planilha…");
   _pushTimers[key] = setTimeout(()=>{
     bePush(key)
-      .then(()=> setSync("Salvo na planilha · "+new Date().toLocaleTimeString("pt-BR")))
+      .then(()=>{ delete _dirty[key]; setSync("Salvo na planilha · "+new Date().toLocaleTimeString("pt-BR")); })
       .catch(e=> setSync("Falha ao salvar online ("+e.message+") — salvo neste navegador", true));
-  }, 500);
+  }, 400);
 }
+// Garante a entrega das gravações pendentes ao fechar/trocar de aba (mesmo mid-flight).
+function flushDirty(){
+  if(!BE) return;
+  Object.keys(_dirty).forEach(key=>{
+    clearTimeout(_pushTimers[key]);
+    try{
+      const blob = new Blob([JSON.stringify(bodyFor(key))], { type:"text/plain;charset=utf-8" });
+      if(navigator.sendBeacon && navigator.sendBeacon(BE.API_URL, blob)) { delete _dirty[key]; }
+      else { bePush(key).then(()=>{ delete _dirty[key]; }).catch(()=>{}); }
+    }catch(e){}
+  });
+}
+window.addEventListener("pagehide", flushDirty);
+document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="hidden") flushDirty(); });
 
 function persistLocal(){ try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){} }
 function persist(){ persistLocal(); queuePush(slot()); }
