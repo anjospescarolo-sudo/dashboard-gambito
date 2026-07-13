@@ -297,11 +297,11 @@
       <select id="cfgMonth"></select>
     </div>
     <div class="fld" data-only="equipe">
-      <label>Trimestre</label>
+      <label>Período</label>
       <select id="cfgQuarter">
         <option value="0">1º Trimestre</option>
         <option value="1">2º Trimestre</option>
-        <option value="2">3º Trimestre</option>
+        <option value="2">3º Bimestre</option>
         <option value="3">4º Trimestre</option>
       </select>
     </div>
@@ -330,7 +330,7 @@
         <div class="nudges" id="nudges"></div>
       </div>
       <div class="hero-right">
-        <div class="hero-money-cap">Bônus trimestral projetado</div>
+        <div class="hero-money-cap">Bônus do período projetado</div>
         <div class="hero-money num" id="heroMoney">R$ 0</div>
         <div class="hero-money-sub" id="heroMoneySub">com base no score acumulado do trimestre</div>
         <div class="hero-money-row">
@@ -500,10 +500,10 @@ const OPS = [
 // Aceleradores (+5 se atingir gatilho) e detratores (penalidade se estourar)
 const BONUSROWS = [
   {id:"modelo", nome:"Modelo de Servir", tipo:"bonus", gatilho:70,  op:">=", pts:5, agg:"wk4", triAgg:"avg", fmt:"num"},
-  {id:"fp",     nome:"FP (300k)",        tipo:"bonus", gatilho:5,   triGatilho:15, op:">=", pts:5, agg:"sum", fmt:"num"},
-  {id:"opin",   nome:"Opin (300k)",      tipo:"bonus", gatilho:5,   triGatilho:15, op:">=", pts:5, agg:"sum", fmt:"num"},
+  {id:"fp",     nome:"FP (300k)",        tipo:"bonus", gatilho:5,   op:">=", pts:5, agg:"sum", fmt:"num"},
+  {id:"opin",   nome:"Opin (300k)",      tipo:"bonus", gatilho:5,   op:">=", pts:5, agg:"sum", fmt:"num"},
   {id:"nps",    nome:"NPS",              tipo:"bonus", gatilho:95,  op:">=", pts:5, agg:"wk4", triAgg:"avg", fmt:"num"},
-  {id:"npsResp",nome:"Respostas NPS", tipo:"detr", gatilho:5, triGatilho:15, op:"<", pts:-5, agg:"sum", triAgg:"sum", fmt:"num",
+  {id:"npsResp",nome:"Respostas NPS", tipo:"detr", gatilho:5, op:"<", pts:-5, agg:"sum", triAgg:"sum", fmt:"num",
     reg:"−5 se < 5 respostas no mês (< 15 no tri)"},
   {id:"baseCli",nome:"Base de clientes ativos", tipo:"detr", gatilho:"BASE", op:">", pts:-5, agg:"last", fmt:"num",
     reg:"−5 se acima do teto do cluster"},
@@ -521,8 +521,17 @@ const ROSTER = [
   {n:"Sell Chaves",    c:"Exclusive"}
 ];
 const MONTHS = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-// trimestre a que cada mês pertence (para acumular)
-const TRIM = m => Math.floor(m/3);
+// Calendário por exceção: o 3º período é BIMESTRE (Jul/Ago); Dezembro fica fora por ora.
+// Bônus e metas são proporcionais ao nº de meses do período (trimestre=3, bimestre=2).
+const PERIODS = [
+  { nome:"1º Trimestre", abrev:"1º Tri", months:[0,1,2] },
+  { nome:"2º Trimestre", abrev:"2º Tri", months:[3,4,5] },
+  { nome:"3º Bimestre",  abrev:"3º Bim", months:[6,7] },
+  { nome:"4º Trimestre", abrev:"4º Tri", months:[8,9,10] }
+];
+function periodOf(m){ for(let i=0;i<PERIODS.length;i++){ if(PERIODS[i].months.indexOf(m)>-1) return i; } return -1; }
+function periodMonths(p){ return (PERIODS[p] || {months:[]}).months; }
+function periodN(p){ return periodMonths(p).length || 3; }
 
 /* ============ STATE + STORAGE ============ */
 const KEY = "jfk_bonus_v1";
@@ -598,7 +607,7 @@ function persist(){ persistLocal(); queuePush(slot()); }
 
 const cfg = { name:"—", cluster:"Exclusive", month:5, team:"Gambito", quarter:1 };
 Object.assign(cfg, store.meta || {});
-if(cfg.quarter==null) cfg.quarter = Math.floor(cfg.month/3);
+if(cfg.quarter==null){ const p=periodOf(cfg.month); cfg.quarter = p<0 ? 3 : p; }
 let period = "mes";
 let view = "assessor";
 let chartMetric = "captacao";
@@ -735,21 +744,22 @@ function computeMonthFor(sd, cluster){
 }
 function computeMonth(){ return computeMonthFor(data(), cfg.cluster); }
 
-// meses do trimestre a que 'month' pertence
-function triMonths(month){ const t0=TRIM(month)*3; return [t0,t0+1,t0+2]; }
+// meses do período (trimestre/bimestre) a que 'month' pertence
+function triMonths(month){ return periodMonths(periodOf(month)).slice(); }
 
-// Trimestre: derivado dos 3 meses preenchidos (sem input manual)
+// Período: derivado dos meses preenchidos (sem input manual). nº de meses varia (3 ou 2).
 function computeTriFor(name, month, cluster){
   const ci = CLUSTER_IDX(cluster);
   const mm = triMonths(month);
+  const nMonths = mm.length || 3;
   const sds = mm.map(x=>slotDataOf(name,x));
-  const out = {metas:[], base:0, bonus:0, detr:0, bonusRows:[], months:mm};
+  const out = {metas:[], base:0, bonus:0, detr:0, bonusRows:[], months:mm, nMonths};
   METAS.forEach(m=>{
     const crossAgg = m.triAgg || m.agg;
     let triReal;
     if(m.id==="ativ") triReal = sds.reduce((s,sd)=>s+ativPointsOf(sd),0);
     else triReal = aggregate(sds.map(sd=>realMesOf(sd,m.id,m.agg)), crossAgg);
-    const triMeta = crossAgg==="avg" ? m.meta[ci] : m.meta[ci]*3;
+    const triMeta = crossAgg==="avg" ? m.meta[ci] : m.meta[ci]*nMonths;
     const rv = triReal!=null? triReal : 0;
     let ratio = triMeta ? Math.max(0, rv/triMeta) : 0;
     if(m.cap) ratio = Math.min(ratio,1);
@@ -760,7 +770,8 @@ function computeTriFor(name, month, cluster){
   });
   BONUSROWS.forEach(b=>{
     const triReal = aggregate(sds.map(sd=>realMesOf(sd,b.id,b.agg)), b.triAgg || b.agg);
-    let gat = b.gatilho==="BASE" ? BASE_LIMIT[ci] : (b.triGatilho!=null ? b.triGatilho : b.gatilho);
+    // gatilho do período: indicadores somados (FP/Opin/Respostas) escalam por nº de meses
+    let gat = b.gatilho==="BASE" ? BASE_LIMIT[ci] : (b.agg==="sum" ? b.gatilho*nMonths : b.gatilho);
     let hit=false;
     if(triReal!=null){
       if(b.op===">=") hit = triReal>=gat;
@@ -779,13 +790,13 @@ function computeTriFor(name, month, cluster){
 }
 function computeTri(){ return computeTriFor(cfg.name, cfg.month, cfg.cluster); }
 
-function payoutFor(cluster, score){
+function payoutFor(cluster, score, nMonths){
   const ci = CLUSTER_IDX(cluster);
-  const full = BONUS.assessor[ci];
+  const full = BONUS.assessor[ci] * ((nMonths||3)/3);   // bônus proporcional (bimestre = 2/3)
   const pct = score>=80 ? score/100 : 0;
   return { full, pct, value: full*pct, cap: full*1.2 };
 }
-function payout(score){ return payoutFor(cfg.cluster, score); }
+function payout(score){ return payoutFor(cfg.cluster, score, periodN(periodOf(cfg.month))); }
 
 /* ============ RENDER ============ */
 function weekHeaders(extra){
@@ -913,8 +924,7 @@ function renderBonus(mo, tri){
     const months=tri.months;
     let h=triHeaders(months, "<th>Efeito</th>"); h+="<tbody>";
     tri.bonusRows.forEach(b=>{
-      const gatBase = (b.triGatilho!=null ? b.triGatilho : b.gatilho);
-      const gatTxt = gatBase==="BASE" ? BASE_LIMIT[ci] : gatBase;
+      const gatTxt = b.gat;   // já resolvido/escalado no computeTriFor
       const metaTxt = (b.tipo==="bonus"?"≥ ":(b.op===">"?"máx ":"mín ")) + fmtVal(gatTxt, b.fmt);
       const farolState = b.real==null ? "n" : (b.tipo==="bonus" ? (b.active?"g":"r") : (b.active?"r":"g"));
       let flag,fcls;
@@ -953,7 +963,9 @@ function renderBonus(mo, tri){
 function renderHero(mo, tri){
   const showScore = period==="mes" ? mo.total : tri.total;
   document.getElementById("heroScore").textContent = fmtPts(showScore);
-  document.getElementById("heroMonthLbl").textContent = period==="mes" ? "· "+MONTHS[cfg.month] : "· "+(TRIM(cfg.month)+1)+"º trimestre";
+  document.getElementById("heroMonthLbl").textContent = period==="mes"
+    ? "· "+MONTHS[cfg.month]
+    : "· "+(periodOf(cfg.month)>=0 ? PERIODS[periodOf(cfg.month)].nome : "fora de período");
   const pctW = Math.min(showScore/120*100,100);
   const fill = document.getElementById("meterFill");
   fill.style.width = pctW+"%";
@@ -1223,7 +1235,6 @@ function renderMetricChart(id){
 }
 
 /* ============ TEAM COMPILATION ============ */
-const QNAMES=["1º","2º","3º","4º"];
 // Abreviações e colunas da matriz assessor × indicadores (visão Equipe)
 const ABBR = { capTot:"Cap.Bruta", capPF:"Cap.PF", roa:"ROA", ativ:"Ativ", divers:"Div%",
   reuBase:"Reu.Base", indic:"Indic", leads:"Leads", reuLead:"Reu.Lead", cross:"Cross",
@@ -1247,14 +1258,15 @@ function fmtCell(v, col){
 // Compilado da equipe no TRIMESTRE selecionado.
 function computeTeam(quarter){
   const roster = ROSTER.filter(r=>r.c);
-  const month0 = quarter*3;
+  const month0 = periodMonths(quarter)[0];   // 1º mês do período selecionado
+  const nMonths = periodN(quarter);
   const rows=[]; let bonusTotal=0, scoreSum=0, withData=0;
   const metaPool  = METAS.map(m=>({m, sumReal:0, sumMeta:0, ratios:[], vals:[]}));
   const bonusPool = BONUSROWS.map(b=>({b, vals:[], gats:[]}));
   const mm = triMonths(month0);
   roster.forEach(r=>{
     const tri = computeTriFor(r.n, month0, r.c);
-    const pay = payoutFor(r.c, tri.total);
+    const pay = payoutFor(r.c, tri.total, nMonths);
     const cells = {};
     tri.metas.forEach(m=>{ cells[m.id] = { v:m.triReal, ok: m.hasReal ? (m.ratio>=1) : null }; });
     OPS.forEach(o=>{ cells[o.id] = { v: aggregate(mm.map(mi=>monthVal(r.n,mi,o.id,o.agg)), o.triAgg||o.agg), ok:null }; });
@@ -1281,7 +1293,7 @@ function computeTeam(quarter){
   });
   const bonusScored = bonusPool.map(p=>{
     const v = avg(p.vals);
-    const gat = p.gats.length ? avg(p.gats) : (p.b.triGatilho!=null?p.b.triGatilho:p.b.gatilho);
+    const gat = p.gats.length ? avg(p.gats) : (p.b.agg==="sum" ? p.b.gatilho*nMonths : p.b.gatilho);
     let hit=false;
     if(v!=null){ if(p.b.op===">=")hit=v>=gat; else if(p.b.op==="<")hit=v<gat; else if(p.b.op===">")hit=v>gat; }
     return {nome:p.b.nome, tipo:p.b.tipo, val:v, gat, hit, fmt:p.b.fmt, pts:p.b.pts, op:p.b.op};
@@ -1291,12 +1303,13 @@ function computeTeam(quarter){
 }
 function renderTeam(){
   const t = computeTeam(cfg.quarter);
-  const qn = QNAMES[cfg.quarter];
+  const qn = PERIODS[cfg.quarter].abrev;     // ex.: "3º Bim"
+  const qnome = PERIODS[cfg.quarter].nome;   // ex.: "3º Bimestre"
   const el = document.getElementById("viewEquipe");
   const target=80, hit=t.teamBase>=target, gaugePct=Math.min(t.teamBase/120*100,100);
   let html=`<div class="team-top">
     <div class="team-card">
-      <div class="team-cap">Atingimento de metas · Equipe ${esc(cfg.team)} · ${qn} Trimestre</div>
+      <div class="team-cap">Atingimento de metas · Equipe ${esc(cfg.team)} · ${qnome}</div>
       <div class="team-big num" style="color:${hit?'var(--green)':'var(--red)'}">${fmtPts(t.teamBase)}</div>
       <div class="team-sub">metas somadas da equipe · mínimo 80 pts ${hit?'· <b style="color:var(--green)">atingido</b>':`· faltam ${fmtPts(target-t.teamBase)} pts`} · score médio individual ${fmtPts(t.avgScore)}</div>
       <div class="meter" style="margin-top:16px">
@@ -1305,7 +1318,7 @@ function renderTeam(){
       </div>
     </div>
   </div>`;
-  html+=`<div class="section"><div class="sec-head"><span class="sec-tag metas"></span><h2>Assessores · ${qn} Tri</h2><span class="hint">ranking por score do trimestre</span></div>
+  html+=`<div class="section"><div class="sec-head"><span class="sec-tag metas"></span><h2>Assessores · ${qn}</h2><span class="hint">ranking por score do trimestre</span></div>
     <div class="tscroll"><table class="rank"><thead><tr>
       <th style="text-align:left;padding-left:16px">Assessor</th><th>Cluster</th><th>Score tri</th><th>Bônus projetado</th></tr></thead><tbody>`;
   t.rows.forEach(r=>{
@@ -1318,7 +1331,7 @@ function renderTeam(){
       <td class="money">${r.bonus>0?fmtBRL(r.bonus):'—'}</td></tr>`;
   });
   html+=`</tbody></table></div></div>`;
-  html+=`<div class="section"><div class="sec-head"><span class="sec-tag metas"></span><h2>Atingimento por indicador · ${qn} Tri</h2><span class="hint">captação somada · ROA e diversificação por média</span></div>
+  html+=`<div class="section"><div class="sec-head"><span class="sec-tag metas"></span><h2>Atingimento por indicador · ${qn}</h2><span class="hint">captação somada · ROA e diversificação por média</span></div>
     <div class="tscroll"><table class="rank"><thead><tr><th style="text-align:left;padding-left:16px">Indicador</th><th>Realizado</th><th>Meta</th><th>Atingimento</th><th>Pontos</th></tr></thead><tbody>`;
   t.metaScored.forEach(p=>{
     const realTxt = p.id==="ativ" ? (p.real!=null?fmtPts(p.real)+" pts":"—") : (p.real!=null?fmtVal(p.real,p.fmt):"—");
@@ -1326,7 +1339,7 @@ function renderTeam(){
     html+=`<tr><td class="rname">${p.nome}</td><td class="sc">${realTxt}</td><td class="sc" style="color:var(--ink-faint)">${metaTxt}</td><td class="sc">${(p.ratio*100).toFixed(0)}%</td><td class="sc ${p.ratio>=1?'hit':''}">${fmtPts(p.pts)} / ${p.peso}</td></tr>`;
   });
   html+=`</tbody></table></div></div>`;
-  html+=`<div class="section"><div class="sec-head"><span class="sec-tag bonus"></span><h2>Aceleradores e detratores · ${qn} Tri</h2><span class="hint">média da equipe vs gatilho</span></div>
+  html+=`<div class="section"><div class="sec-head"><span class="sec-tag bonus"></span><h2>Aceleradores e detratores · ${qn}</h2><span class="hint">média da equipe vs gatilho</span></div>
     <div class="tscroll"><table class="rank"><thead><tr><th style="text-align:left;padding-left:16px">Indicador</th><th>Média equipe</th><th>Gatilho</th><th>Status</th></tr></thead><tbody>`;
   t.bonusScored.forEach(b=>{
     const gatTxt = (b.tipo==="bonus"?"≥ ":(b.op===">"?"máx ":"mín ")) + fmtVal(b.gat, b.fmt);
@@ -1338,7 +1351,7 @@ function renderTeam(){
   html+=`</tbody></table></div></div>`;
   // ---- Matrizes assessor × indicadores (trimestre selecionado) ----
   const matrixTable = (cols, titulo, colored) => {
-    let m=`<div class="section"><div class="sec-head"><span class="sec-tag ${colored?'metas':'ops'}"></span><h2>${titulo} · ${qn} Tri</h2><span class="hint">total do trimestre · passe o mouse no cabeçalho p/ nome completo</span></div>
+    let m=`<div class="section"><div class="sec-head"><span class="sec-tag ${colored?'metas':'ops'}"></span><h2>${titulo} · ${qn}</h2><span class="hint">total do trimestre · passe o mouse no cabeçalho p/ nome completo</span></div>
       <div class="tscroll"><table class="rank matrix"><thead><tr><th style="text-align:left;padding-left:16px">Assessor</th>`;
     cols.forEach(c=>{ m+=`<th title="${esc(c.title)}">${c.lbl}</th>`; });
     m+=`</tr></thead><tbody>`;
