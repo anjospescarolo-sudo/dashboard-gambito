@@ -543,7 +543,12 @@ async function beLoadAll(){
   Object.keys(d).forEach(k=>{
     if(k==="meta" || !d[k]) return;
     const cur = store[k] || {};
-    store[k] = Object.assign({}, cur, { w: d[k].w || {}, ativCalc: d[k].ativCalc || cur.ativCalc || [] });
+    store[k] = Object.assign({}, cur, {
+      w: d[k].w || {},
+      ativCalc: d[k].ativCalc || cur.ativCalc || [],
+      plan: d[k].plan || [],
+      chal: d[k].chal || []
+    });
   });
   return true;
 }
@@ -553,7 +558,7 @@ function bodyFor(key){
   const mes = +parts.pop();
   const assessor = parts.join("|");
   const rec = store[key] || {};
-  return { assessor, mes, w: rec.w || {}, ativCalc: rec.ativCalc || [] };
+  return { assessor, mes, w: rec.w || {}, ativCalc: rec.ativCalc || [], plan: rec.plan || [], chal: rec.chal || [] };
 }
 async function bePush(key){
   const r = await fetch(BE.API_URL, { method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" }, body: JSON.stringify(bodyFor(key)) });
@@ -1079,6 +1084,7 @@ function copyOpenActions(){
   const existentes = new Set(d.plan.map(p=>(p.t||"").trim()));
   let add=0;
   abertas.forEach(p=>{
+    if(d.plan.length>=15) return;                       // respeita o limite de 15 ações
     const t=(p.t||"").trim();
     if(existentes.has(t)) return;                       // evita duplicar
     const ultimo = (p.prazos && p.prazos.length) ? p.prazos[p.prazos.length-1].d : null;
@@ -1447,7 +1453,10 @@ function wirePlan(){
     d.plan.splice(+b.dataset.planrm,1); persist(); renderPlan();
   }));
   const addP=document.getElementById("addPlan");
-  if(addP) addP.addEventListener("click",()=>{ d.plan.push({t:"",done:false,prazos:[],doneAt:null}); persist(); renderPlan(); });
+  if(addP) addP.addEventListener("click",()=>{
+    if(d.plan.length>=15){ alert("Limite de 15 ações por mês."); return; }
+    d.plan.push({t:"",done:false,prazos:[],doneAt:null}); persist(); renderPlan();
+  });
 }
 
 function buildSelectors(){
